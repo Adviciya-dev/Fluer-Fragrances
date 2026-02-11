@@ -559,10 +559,7 @@ const ProductCard = ({ product }) => {
         </motion.button>
       </div>
 
-      <div 
-        className="p-6 cursor-pointer"
-        onClick={() => navigate(`/product/${product.slug}`)}
-      >
+      <div className="p-6">
         <p className="text-xs text-muted-foreground tracking-wider mb-2">{product.scent_family}</p>
         <h3 className="font-display text-lg mb-2 group-hover:text-accent transition-colors">{product.name}</h3>
         <p className="text-sm text-muted-foreground line-clamp-2 mb-4">{product.short_description}</p>
