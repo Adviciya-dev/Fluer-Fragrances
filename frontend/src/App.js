@@ -489,13 +489,18 @@ const ProductCard = ({ product }) => {
   const navigate = useNavigate();
   const inWishlist = isInWishlist(product.id);
 
+  const handleCardClick = () => {
+    navigate(`/product/${product.slug}`);
+  };
+
   return (
     <motion.div
       data-testid={`product-card-${product.slug}`}
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      className="group product-card glass rounded-2xl overflow-hidden card-hover"
+      onClick={handleCardClick}
+      className="group product-card glass rounded-2xl overflow-hidden card-hover cursor-pointer"
     >
       <div className="relative img-zoom aspect-[4/5]">
         <img
