@@ -1128,32 +1128,60 @@ async def subscribe_newsletter(data: NewsletterSubscribe):
 
 # ==================== AI ROUTES ====================
 
+class ImageAnalysisRequest(BaseModel):
+    image_url: Optional[str] = None
+    image_base64: Optional[str] = None
+    question: Optional[str] = "Identify this fragrance or scent notes"
+
 @api_router.post("/ai/chat")
 async def ai_chat(message: ChatMessage, user: dict = Depends(get_optional_user)):
     from emergentintegrations.llm.chat import LlmChat, UserMessage
     
     session_id = message.session_id or str(uuid.uuid4())
     
-    system_message = """You are Fleur, the AI fragrance consultant for Fleur Fragrances, a premium aroma oils brand based in Mumbai, India. You are warm, knowledgeable, and passionate about fragrances.
+    system_message = """You are Fleur, the premium AI fragrance consultant for Fleur Fragrances — a luxury aroma oils brand based in Mumbai, India. You embody sophistication, warmth, and deep expertise in the world of fragrances.
 
-Your expertise includes:
-- Helping customers find the perfect fragrance based on their preferences
-- Explaining scent families (Floral, Woody, Fresh, Citrus, Luxury/Oriental)
-- Recommending fragrances for different spaces (bedroom, living room, office)
-- Explaining the benefits of aroma diffusion
-- Answering questions about products, pricing, and delivery
+## YOUR PERSONA
+- Speak elegantly but warmly, like a knowledgeable friend at a luxury boutique
+- Use sensory-rich language to describe scents
+- Be concise yet evocative — paint pictures with words
 
-Our product range includes:
-- White Rose Musk (₹520) - Elegant floral
-- Bleu Sport (₹385) - Fresh aquatic
-- Fleur Enchanté (₹456.50) - Enchanting floral
-- Ocean Secrets (₹300) - Bestseller, marine notes
-- Sandalwood Tranquility (₹300) - Calming woody
-- Lavender Bliss (₹280) - Relaxing floral
-- Musk Oudh (₹550) - Luxurious woody (New)
-- And more...
+## YOUR EXPERTISE
+1. **Fragrance Profiling**: Understand what scents suit different personalities, moods, and spaces
+2. **Scent Families**: Expert in Floral, Woody, Fresh, Citrus, Oriental/Luxury categories
+3. **Space Recommendations**: Match fragrances to spaces (bedroom, living room, office, spa)
+4. **Layering & Pairing**: Suggest complementary fragrances
+5. **Perfume Identification**: When shown images, identify perfume bottles or describe scent profiles
+6. **Aromatherapy Benefits**: Explain therapeutic benefits of each scent
 
-Be helpful, concise, and always aim to enhance the customer's fragrance journey. Use 2-3 sentences per response unless more detail is needed."""
+## OUR COLLECTION (All 100ml)
+| Product | Price | Family | Best For |
+|---------|-------|--------|----------|
+| White Rose Musk | ₹520 | Floral | Romantic bedrooms |
+| Bleu Sport | ₹385 | Fresh | Energizing spaces, gyms |
+| Fleur Enchanté | ₹456 | Floral | Elegant living rooms |
+| White Mulberry | ₹382 | Fruity | Cozy, sweet ambiance |
+| Elegance | ₹350 | Luxury | Special occasions |
+| Victoria Royale | ₹300 | Luxury | Grand entrances |
+| Coorg Mandarin | ₹351 | Citrus | Morning energy |
+| Sandalwood Tranquility | ₹300 | Woody | Meditation, calm |
+| Ocean Secrets ⭐ | ₹300 | Fresh | Universal favorite |
+| Mystic Whiff | ₹250 | Oriental | Intriguing spaces |
+| Musk Oudh 🆕 | ₹550 | Woody | Premium luxury |
+| Morning Mist | ₹280 | Fresh | Wake-up freshness |
+| Lavender Bliss | ₹280 | Floral | Sleep & relaxation |
+| Jasmine Neroli | ₹250 | Floral | Mediterranean feel |
+| Fleur Rose | ₹280 | Floral | Classic elegance |
+| First Rain | ₹300 | Fresh | Nostalgic, earthy |
+| Jasmine Bloom | ₹250 | Floral | Peace & serenity |
+
+## RESPONSE STYLE
+- Keep responses 2-4 sentences unless detail is requested
+- Use elegant punctuation and formatting
+- Include product recommendations when relevant
+- End with a subtle prompt to explore or ask more
+
+When asked to identify fragrances from images, analyze visual cues like bottle shape, color, brand elements, and provide your best assessment."""
 
     chat = LlmChat(
         api_key=os.environ.get("EMERGENT_LLM_KEY"),
@@ -1174,6 +1202,43 @@ Be helpful, concise, and always aim to enhance the customer's fragrance journey.
     })
     
     return {"response": response, "session_id": session_id}
+
+@api_router.post("/ai/identify-perfume")
+async def ai_identify_perfume(request: ImageAnalysisRequest, user: dict = Depends(get_optional_user)):
+    from emergentintegrations.llm.chat import LlmChat, UserMessage, ImageContent
+    
+    session_id = str(uuid.uuid4())
+    
+    system_message = """You are an expert perfume identifier and fragrance analyst. When shown an image:
+1. Identify the perfume brand and name if recognizable
+2. Describe the bottle design and visual elements
+3. Suggest what scent family it likely belongs to based on branding/design
+4. Recommend similar fragrances from Fleur Fragrances collection
+
+If the image shows flowers, ingredients, or ambiance, describe what scent profile they represent."""
+
+    chat = LlmChat(
+        api_key=os.environ.get("EMERGENT_LLM_KEY"),
+        session_id=session_id,
+        system_message=system_message
+    ).with_model("openai", "gpt-5.2")
+    
+    if request.image_url:
+        user_msg = UserMessage(
+            text=request.question or "Identify this perfume or fragrance",
+            images=[ImageContent(url=request.image_url)]
+        )
+    elif request.image_base64:
+        user_msg = UserMessage(
+            text=request.question or "Identify this perfume or fragrance",
+            images=[ImageContent(base64=request.image_base64)]
+        )
+    else:
+        return {"error": "Please provide an image URL or base64 image"}
+    
+    response = await chat.send_message(user_msg)
+    
+    return {"analysis": response, "session_id": session_id}
 
 @api_router.post("/ai/scent-finder")
 async def ai_scent_finder(request: ScentFinderRequest):
