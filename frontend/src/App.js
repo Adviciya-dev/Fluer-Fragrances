@@ -49,6 +49,15 @@ const ProductImage = ({ src, alt, className = "", fallback = FALLBACK_IMAGE }) =
     setLoading(true);
     setError(false);
     setImageSrc(src);
+    
+    // Fallback timeout - if image doesn't load in 8s, show fallback
+    const timeout = setTimeout(() => {
+      if (loading) {
+        setLoading(false);
+      }
+    }, 8000);
+    
+    return () => clearTimeout(timeout);
   }, [src]);
 
   return (
@@ -65,6 +74,7 @@ const ProductImage = ({ src, alt, className = "", fallback = FALLBACK_IMAGE }) =
         alt={alt}
         className={`w-full h-full object-cover transition-opacity duration-500 ${loading ? 'opacity-0' : 'opacity-100'}`}
         loading="lazy"
+        referrerPolicy="no-referrer"
         onLoad={() => setLoading(false)}
         onError={() => {
           if (!error) {
