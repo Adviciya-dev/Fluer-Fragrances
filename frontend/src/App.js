@@ -673,7 +673,7 @@ const HomePage = () => {
       {/* CTA */}
       <section className="py-24 relative overflow-hidden">
         <div className="absolute inset-0">
-          <img src="https://images.pexels.com/photos/3685530/pexels-photo-3685530.jpeg?auto=compress&cs=tinysrgb&w=1920" alt="Ambiance" className="w-full h-full object-cover opacity-20" />
+          <img src="https://images.unsplash.com/photo-1602928321679-560bb453f190?w=1920&q=80" alt="Ambiance" className="w-full h-full object-cover opacity-20" />
           <div className="absolute inset-0 bg-gradient-to-r from-background via-background/90 to-background/70" />
         </div>
         <div className="relative max-w-7xl mx-auto px-6 lg:px-8">
@@ -1162,7 +1162,7 @@ const AboutPage = () => {
         <StatsCounter stats={brandStory?.stats} />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center my-24">
-          <img src="https://images.pexels.com/photos/3685530/pexels-photo-3685530.jpeg?auto=compress&cs=tinysrgb&w=800" alt="About" className="rounded-lg" />
+          <img src="https://images.unsplash.com/photo-1602928321679-560bb453f190?w=800&q=80" alt="About" className="rounded-lg" />
           <div>
             <h2 className="font-['Cormorant_Garamond'] text-3xl mb-6">The Fleur Story</h2>
             <p className="text-muted-foreground leading-relaxed mb-6">{brandStory?.story}</p>
