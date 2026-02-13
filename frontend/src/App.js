@@ -282,9 +282,16 @@ const Navbar = () => {
           {isOpen && (
             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="lg:hidden mt-6 glass rounded-lg overflow-hidden">
               <div className="p-6 space-y-4">
-                {["Home", "Collection", "Portfolio", "About", "Contact"].map(n => (
-                  <Link key={n} to={`/${n === "Home" ? "" : n === "Collection" ? "shop" : n.toLowerCase()}`} onClick={() => setIsOpen(false)} className="block py-2 text-sm tracking-[0.1em] uppercase hover:text-amber-500">{n}</Link>
-                ))}
+                <Link to="/" onClick={() => setIsOpen(false)} className="block py-2 text-sm tracking-[0.1em] uppercase hover:text-amber-500">Home</Link>
+                <Link to="/shop" onClick={() => setIsOpen(false)} className="block py-2 text-sm tracking-[0.1em] uppercase hover:text-amber-500">Collection</Link>
+                <Link to="/about" onClick={() => setIsOpen(false)} className="block py-2 text-sm tracking-[0.1em] uppercase hover:text-amber-500">About</Link>
+                <div className="border-t border-border/20 pt-4 mt-4">
+                  <p className="text-[10px] tracking-[0.2em] text-muted-foreground mb-3">BUSINESS</p>
+                  <Link to="/portfolio" onClick={() => setIsOpen(false)} className="block py-2 text-sm tracking-[0.1em] uppercase hover:text-amber-500">Portfolio</Link>
+                  <Link to="/corporate-gifting" onClick={() => setIsOpen(false)} className="block py-2 text-sm tracking-[0.1em] uppercase hover:text-amber-500">Corporate Gifting</Link>
+                  <Link to="/sustainability" onClick={() => setIsOpen(false)} className="block py-2 text-sm tracking-[0.1em] uppercase hover:text-amber-500">Sustainability</Link>
+                  <Link to="/contact" onClick={() => setIsOpen(false)} className="block py-2 text-sm tracking-[0.1em] uppercase hover:text-amber-500">Contact</Link>
+                </div>
                 <Link to="/scent-finder" onClick={() => setIsOpen(false)} className="block py-2 text-sm tracking-[0.1em] uppercase text-amber-500">AI Scent Finder</Link>
               </div>
             </motion.div>
