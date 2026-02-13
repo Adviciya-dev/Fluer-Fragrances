@@ -36,7 +36,47 @@ const PRODUCT_IMAGES = {
   "prod_jasmine_bloom": "https://images.pexels.com/photos/4046316/pexels-photo-4046316.jpeg?auto=compress&cs=tinysrgb&w=800"
 };
 
-const getProductImage = (productId) => PRODUCT_IMAGES[productId] || "https://images.pexels.com/photos/965989/pexels-photo-965989.jpeg?auto=compress&cs=tinysrgb&w=800";
+const FALLBACK_IMAGE = "https://images.pexels.com/photos/965989/pexels-photo-965989.jpeg?auto=compress&cs=tinysrgb&w=800";
+const getProductImage = (productId) => PRODUCT_IMAGES[productId] || FALLBACK_IMAGE;
+
+// Premium Image Component with Loading State
+const ProductImage = ({ src, alt, className = "", fallback = FALLBACK_IMAGE }) => {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [imageSrc, setImageSrc] = useState(src);
+
+  useEffect(() => {
+    setLoading(true);
+    setError(false);
+    setImageSrc(src);
+  }, [src]);
+
+  return (
+    <div className={`relative ${className}`}>
+      {loading && (
+        <div className="absolute inset-0 bg-gradient-to-br from-amber-900/20 via-amber-800/10 to-amber-900/20 animate-pulse">
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-12 h-12 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin" />
+          </div>
+        </div>
+      )}
+      <img
+        src={error ? fallback : imageSrc}
+        alt={alt}
+        className={`w-full h-full object-cover transition-opacity duration-500 ${loading ? 'opacity-0' : 'opacity-100'}`}
+        loading="lazy"
+        onLoad={() => setLoading(false)}
+        onError={() => {
+          if (!error) {
+            setError(true);
+            setImageSrc(fallback);
+          }
+          setLoading(false);
+        }}
+      />
+    </div>
+  );
+};
 
 // Context
 const AuthContext = createContext(null);
