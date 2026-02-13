@@ -1268,7 +1268,7 @@ const ContactPage = () => {
       </div>
     </main>
   );
-}};
+};
 
 // CORPORATE GIFTING PAGE
 const CorporateGiftingPage = () => {
