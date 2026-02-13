@@ -225,10 +225,24 @@ const Navbar = () => {
             <span className="block text-[9px] tracking-[0.35em] text-muted-foreground -mt-1">FRAGRANCES</span>
           </Link>
 
-          <div className="hidden lg:flex items-center gap-10">
-            {[{n:"Home",p:"/"},{n:"Collection",p:"/shop"},{n:"Portfolio",p:"/portfolio"},{n:"About",p:"/about"},{n:"Contact",p:"/contact"}].map(l => (
+          <div className="hidden lg:flex items-center gap-8">
+            {[{n:"Home",p:"/"},{n:"Collection",p:"/shop"},{n:"About",p:"/about"}].map(l => (
               <Link key={l.p} to={l.p} className="text-[12px] tracking-[0.15em] uppercase line-animate hover:text-foreground/80 transition-colors">{l.n}</Link>
             ))}
+            {/* Business Dropdown */}
+            <div className="relative group">
+              <button className="flex items-center gap-1 text-[12px] tracking-[0.15em] uppercase line-animate hover:text-foreground/80 transition-colors">
+                Business <ChevronDown size={12} />
+              </button>
+              <div className="absolute left-0 top-full pt-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300">
+                <div className="glass-heavy rounded-lg p-4 min-w-[200px] border border-border/20 space-y-2">
+                  <Link to="/portfolio" className="block py-2 px-3 text-sm hover:text-amber-500 hover:bg-amber-500/5 rounded transition-colors">Portfolio & Clients</Link>
+                  <Link to="/corporate-gifting" className="block py-2 px-3 text-sm hover:text-amber-500 hover:bg-amber-500/5 rounded transition-colors">Corporate Gifting</Link>
+                  <Link to="/sustainability" className="block py-2 px-3 text-sm hover:text-amber-500 hover:bg-amber-500/5 rounded transition-colors">Sustainability</Link>
+                  <Link to="/contact" className="block py-2 px-3 text-sm hover:text-amber-500 hover:bg-amber-500/5 rounded transition-colors">Contact Us</Link>
+                </div>
+              </div>
+            </div>
             <Link to="/scent-finder" className="flex items-center gap-2 text-[12px] tracking-[0.15em] uppercase text-amber-500 hover:text-amber-400 transition-colors">
               <Sparkles size={14} /> AI Finder
             </Link>
