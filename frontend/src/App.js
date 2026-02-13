@@ -1,21 +1,21 @@
 import { useState, useEffect, createContext, useContext, useCallback, useRef } from "react";
 import "@/App.css";
 import "@/index.css";
-import { BrowserRouter, Routes, Route, Link, useNavigate, useLocation, useParams, useSearchParams } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Link, useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion";
 import { 
   ShoppingCart, Heart, User, Menu, X, Sun, Moon, 
-  ChevronRight, ChevronDown, Star, Minus, Plus, Trash2, ArrowRight, ArrowUpRight,
-  MessageCircle, Sparkles, Send, Check, Package, Truck, Upload, Camera,
-  Mail, Phone, MapPin, Instagram, Facebook, Twitter, Play
+  ChevronRight, ChevronDown, ChevronLeft, Star, Minus, Plus, Trash2, ArrowRight, ArrowUpRight,
+  MessageCircle, Sparkles, Send, Check, Package, Truck, Building2, Award, Users, Gift, Leaf,
+  Mail, Phone, MapPin, Instagram, Facebook, Twitter, Play, Quote
 } from "lucide-react";
 import { Toaster, toast } from "sonner";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
-// Premium Product Images - Using Pexels for reliability
+// Premium Product Images - High Quality
 const PRODUCT_IMAGES = {
   "prod_white_rose_musk": "https://images.pexels.com/photos/965989/pexels-photo-965989.jpeg?auto=compress&cs=tinysrgb&w=800",
   "prod_bleu_sport": "https://images.pexels.com/photos/3059609/pexels-photo-3059609.jpeg?auto=compress&cs=tinysrgb&w=800",
@@ -36,9 +36,9 @@ const PRODUCT_IMAGES = {
   "prod_jasmine_bloom": "https://images.pexels.com/photos/4046316/pexels-photo-4046316.jpeg?auto=compress&cs=tinysrgb&w=800"
 };
 
-const getProductImage = (productId) => PRODUCT_IMAGES[productId] || "https://images.unsplash.com/photo-1541643600914-78b084683601?w=800&q=80";
+const getProductImage = (productId) => PRODUCT_IMAGES[productId] || "https://images.pexels.com/photos/965989/pexels-photo-965989.jpeg?auto=compress&cs=tinysrgb&w=800";
 
-// ==================== CONTEXT ====================
+// Context
 const AuthContext = createContext(null);
 const CartContext = createContext(null);
 const ThemeContext = createContext(null);
@@ -47,73 +47,55 @@ const useAuth = () => useContext(AuthContext);
 const useCart = () => useContext(CartContext);
 const useTheme = () => useContext(ThemeContext);
 
-// ==================== THEME PROVIDER ====================
+// Theme Provider
 const ThemeProvider = ({ children }) => {
   const [theme, setTheme] = useState(() => localStorage.getItem("fleur-theme") || "dark");
-
   useEffect(() => {
     localStorage.setItem("fleur-theme", theme);
     document.documentElement.classList.toggle("dark", theme === "dark");
   }, [theme]);
-
   const toggleTheme = () => setTheme(t => t === "dark" ? "light" : "dark");
-
   return <ThemeContext.Provider value={{ theme, toggleTheme }}>{children}</ThemeContext.Provider>;
 };
 
-// ==================== AUTH PROVIDER ====================
+// Auth Provider
 const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(() => localStorage.getItem("fleur-token"));
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (token) {
-      axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-      fetchUser();
-    } else {
-      setLoading(false);
-    }
+    if (token) { axios.defaults.headers.common["Authorization"] = `Bearer ${token}`; fetchUser(); }
+    else setLoading(false);
   }, [token]);
 
   const fetchUser = async () => {
-    try {
-      const { data } = await axios.get(`${API}/auth/me`);
-      setUser(data);
-    } catch (e) {
-      logout();
-    } finally {
-      setLoading(false);
-    }
+    try { const { data } = await axios.get(`${API}/auth/me`); setUser(data); }
+    catch { logout(); }
+    finally { setLoading(false); }
   };
 
   const login = async (email, password) => {
     const { data } = await axios.post(`${API}/auth/login`, { email, password });
-    localStorage.setItem("fleur-token", data.token);
-    setToken(data.token);
-    setUser(data.user);
+    localStorage.setItem("fleur-token", data.token); setToken(data.token); setUser(data.user);
     return data;
   };
 
   const register = async (name, email, password, phone) => {
     const { data } = await axios.post(`${API}/auth/register`, { name, email, password, phone });
-    localStorage.setItem("fleur-token", data.token);
-    setToken(data.token);
-    setUser(data.user);
+    localStorage.setItem("fleur-token", data.token); setToken(data.token); setUser(data.user);
     return data;
   };
 
   const logout = () => {
-    localStorage.removeItem("fleur-token");
-    setToken(null);
-    setUser(null);
+    localStorage.removeItem("fleur-token"); setToken(null); setUser(null);
     delete axios.defaults.headers.common["Authorization"];
   };
 
   return <AuthContext.Provider value={{ user, token, loading, login, register, logout }}>{children}</AuthContext.Provider>;
 };
 
-// ==================== CART PROVIDER ====================
+// Cart Provider
 const CartProvider = ({ children }) => {
   const [cart, setCart] = useState({ items: [], total: 0 });
   const [wishlist, setWishlist] = useState([]);
@@ -121,18 +103,12 @@ const CartProvider = ({ children }) => {
 
   const fetchCart = useCallback(async () => {
     if (!token) return;
-    try {
-      const { data } = await axios.get(`${API}/cart`);
-      setCart(data);
-    } catch (e) { console.error("Failed to fetch cart"); }
+    try { const { data } = await axios.get(`${API}/cart`); setCart(data); } catch {}
   }, [token]);
 
   const fetchWishlist = useCallback(async () => {
     if (!token) return;
-    try {
-      const { data } = await axios.get(`${API}/wishlist`);
-      setWishlist(data.items || []);
-    } catch (e) { console.error("Failed to fetch wishlist"); }
+    try { const { data } = await axios.get(`${API}/wishlist`); setWishlist(data.items || []); } catch {}
   }, [token]);
 
   useEffect(() => { fetchCart(); fetchWishlist(); }, [fetchCart, fetchWishlist]);
@@ -140,33 +116,26 @@ const CartProvider = ({ children }) => {
   const addToCart = async (productId, quantity = 1) => {
     if (!token) { toast.error("Please login to add items"); return; }
     await axios.post(`${API}/cart/add`, { product_id: productId, quantity });
-    await fetchCart();
-    toast.success("Added to cart");
+    await fetchCart(); toast.success("Added to cart");
   };
 
   const updateCartItem = async (productId, quantity) => {
-    await axios.put(`${API}/cart/update`, { product_id: productId, quantity });
-    await fetchCart();
+    await axios.put(`${API}/cart/update`, { product_id: productId, quantity }); await fetchCart();
   };
 
   const removeFromCart = async (productId) => {
-    await axios.delete(`${API}/cart/remove/${productId}`);
-    await fetchCart();
-    toast.success("Removed from cart");
+    await axios.delete(`${API}/cart/remove/${productId}`); await fetchCart(); toast.success("Removed");
   };
 
   const clearCart = async () => { await axios.delete(`${API}/cart/clear`); await fetchCart(); };
 
   const addToWishlist = async (productId) => {
     if (!token) { toast.error("Please login first"); return; }
-    await axios.post(`${API}/wishlist/add/${productId}`);
-    await fetchWishlist();
-    toast.success("Added to wishlist");
+    await axios.post(`${API}/wishlist/add/${productId}`); await fetchWishlist(); toast.success("Added to wishlist");
   };
 
   const removeFromWishlist = async (productId) => {
-    await axios.delete(`${API}/wishlist/remove/${productId}`);
-    await fetchWishlist();
+    await axios.delete(`${API}/wishlist/remove/${productId}`); await fetchWishlist();
   };
 
   const isInWishlist = (productId) => wishlist.some(p => p.id === productId);
@@ -178,7 +147,7 @@ const CartProvider = ({ children }) => {
   );
 };
 
-// ==================== NAVBAR ====================
+// Navbar
 const Navbar = () => {
   const { theme, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
@@ -193,128 +162,66 @@ const Navbar = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const navLinks = [
-    { name: "Home", path: "/" },
-    { name: "Collection", path: "/shop" },
-    { name: "Services", path: "/services" },
-    { name: "About", path: "/about" },
-    { name: "Contact", path: "/contact" },
-  ];
-
   return (
     <motion.header
       data-testid="navbar"
-      initial={{ y: -100 }}
-      animate={{ y: 0 }}
-      transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-700 ${
-        scrolled ? "glass-heavy py-3" : "bg-transparent py-6"
-      }`}
+      initial={{ y: -100 }} animate={{ y: 0 }} transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-700 ${scrolled ? "glass-heavy py-3" : "bg-transparent py-6"}`}
     >
       <nav className="max-w-7xl mx-auto px-6 lg:px-8">
         <div className="flex items-center justify-between">
-          {/* Logo */}
           <Link to="/" className="group" data-testid="logo">
-            <div className="flex flex-col">
-              <span className="font-['Cormorant_Garamond'] text-3xl tracking-[0.15em] font-light gold-text">FLEUR</span>
-              <span className="text-[10px] tracking-[0.35em] text-muted-foreground -mt-1">FRAGRANCES</span>
-            </div>
+            <span className="font-['Cormorant_Garamond'] text-3xl tracking-[0.15em] font-light gold-text">FLEUR</span>
+            <span className="block text-[9px] tracking-[0.35em] text-muted-foreground -mt-1">FRAGRANCES</span>
           </Link>
 
-          {/* Desktop Nav */}
-          <div className="hidden lg:flex items-center gap-12">
-            {navLinks.map((link) => (
-              <Link
-                key={link.path}
-                to={link.path}
-                data-testid={`nav-${link.name.toLowerCase()}`}
-                className="text-[13px] tracking-[0.15em] uppercase line-animate hover:text-foreground/80 transition-colors"
-              >
-                {link.name}
-              </Link>
+          <div className="hidden lg:flex items-center gap-10">
+            {[{n:"Home",p:"/"},{n:"Collection",p:"/shop"},{n:"Portfolio",p:"/portfolio"},{n:"About",p:"/about"},{n:"Contact",p:"/contact"}].map(l => (
+              <Link key={l.p} to={l.p} className="text-[12px] tracking-[0.15em] uppercase line-animate hover:text-foreground/80 transition-colors">{l.n}</Link>
             ))}
-            <Link
-              to="/scent-finder"
-              data-testid="nav-scent-finder"
-              className="flex items-center gap-2 text-[13px] tracking-[0.15em] uppercase text-amber-500 hover:text-amber-400 transition-colors"
-            >
-              <Sparkles size={14} />
-              AI Finder
+            <Link to="/scent-finder" className="flex items-center gap-2 text-[12px] tracking-[0.15em] uppercase text-amber-500 hover:text-amber-400 transition-colors">
+              <Sparkles size={14} /> AI Finder
             </Link>
           </div>
 
-          {/* Actions */}
           <div className="flex items-center gap-3">
             <button onClick={toggleTheme} data-testid="theme-toggle" className="p-2.5 rounded-full hover:bg-foreground/5 transition-all">
               {theme === "dark" ? <Sun size={18} strokeWidth={1.5} /> : <Moon size={18} strokeWidth={1.5} />}
             </button>
-
             <button onClick={() => navigate("/wishlist")} data-testid="wishlist-btn" className="relative p-2.5 rounded-full hover:bg-foreground/5 transition-all">
               <Heart size={18} strokeWidth={1.5} />
-              {wishlist.length > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-amber-500 text-[10px] text-black rounded-full flex items-center justify-center font-medium">
-                  {wishlist.length}
-                </span>
-              )}
+              {wishlist.length > 0 && <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-amber-500 text-[10px] text-black rounded-full flex items-center justify-center font-medium">{wishlist.length}</span>}
             </button>
-
             <button onClick={() => navigate("/cart")} data-testid="cart-btn" className="relative p-2.5 rounded-full hover:bg-foreground/5 transition-all">
               <ShoppingCart size={18} strokeWidth={1.5} />
-              {cart.items.length > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-amber-500 text-[10px] text-black rounded-full flex items-center justify-center font-medium">
-                  {cart.items.length}
-                </span>
-              )}
+              {cart.items.length > 0 && <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-amber-500 text-[10px] text-black rounded-full flex items-center justify-center font-medium">{cart.items.length}</span>}
             </button>
-
             {user ? (
               <div className="relative group">
-                <button data-testid="user-menu-btn" className="p-2.5 rounded-full hover:bg-foreground/5 transition-all">
-                  <User size={18} strokeWidth={1.5} />
-                </button>
+                <button className="p-2.5 rounded-full hover:bg-foreground/5 transition-all"><User size={18} strokeWidth={1.5} /></button>
                 <div className="absolute right-0 top-full pt-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300">
-                  <div className="glass-heavy rounded-lg p-5 min-w-[220px] border border-border/20">
+                  <div className="glass-heavy rounded-lg p-5 min-w-[200px] border border-border/20">
                     <p className="text-sm mb-4 text-muted-foreground">Welcome, <span className="text-foreground">{user.name}</span></p>
-                    <div className="space-y-1">
-                      <Link to="/dashboard" className="block py-2 text-sm hover:text-amber-500 transition-colors">My Orders</Link>
-                      <Link to="/wishlist" className="block py-2 text-sm hover:text-amber-500 transition-colors">Wishlist</Link>
-                      <button onClick={logout} className="w-full text-left py-2 text-sm text-red-400 hover:text-red-300 transition-colors">Logout</button>
-                    </div>
+                    <Link to="/dashboard" className="block py-2 text-sm hover:text-amber-500 transition-colors">My Orders</Link>
+                    <button onClick={logout} className="w-full text-left py-2 text-sm text-red-400 hover:text-red-300">Logout</button>
                   </div>
                 </div>
               </div>
             ) : (
-              <Link to="/login" data-testid="login-btn" className="hidden sm:block ml-2 px-6 py-2.5 bg-amber-500 text-black text-[11px] tracking-[0.15em] uppercase hover:bg-amber-400 transition-colors">
-                Login
-              </Link>
+              <Link to="/login" data-testid="login-btn" className="hidden sm:block ml-2 px-6 py-2.5 bg-amber-500 text-black text-[11px] tracking-[0.15em] uppercase hover:bg-amber-400 transition-colors">Login</Link>
             )}
-
-            <button onClick={() => setIsOpen(!isOpen)} className="lg:hidden p-2.5" data-testid="mobile-menu-btn">
-              {isOpen ? <X size={22} strokeWidth={1.5} /> : <Menu size={22} strokeWidth={1.5} />}
-            </button>
+            <button onClick={() => setIsOpen(!isOpen)} className="lg:hidden p-2.5">{isOpen ? <X size={22} /> : <Menu size={22} />}</button>
           </div>
         </div>
 
-        {/* Mobile Menu */}
         <AnimatePresence>
           {isOpen && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              className="lg:hidden mt-6 glass rounded-lg overflow-hidden"
-            >
+            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="lg:hidden mt-6 glass rounded-lg overflow-hidden">
               <div className="p-6 space-y-4">
-                {navLinks.map((link) => (
-                  <Link key={link.path} to={link.path} onClick={() => setIsOpen(false)}
-                    className="block py-2 text-sm tracking-[0.1em] uppercase hover:text-amber-500 transition-colors">
-                    {link.name}
-                  </Link>
+                {["Home", "Collection", "Portfolio", "About", "Contact"].map(n => (
+                  <Link key={n} to={`/${n === "Home" ? "" : n === "Collection" ? "shop" : n.toLowerCase()}`} onClick={() => setIsOpen(false)} className="block py-2 text-sm tracking-[0.1em] uppercase hover:text-amber-500">{n}</Link>
                 ))}
-                <Link to="/scent-finder" onClick={() => setIsOpen(false)}
-                  className="block py-2 text-sm tracking-[0.1em] uppercase text-amber-500">
-                  AI Scent Finder
-                </Link>
+                <Link to="/scent-finder" onClick={() => setIsOpen(false)} className="block py-2 text-sm tracking-[0.1em] uppercase text-amber-500">AI Scent Finder</Link>
               </div>
             </motion.div>
           )}
@@ -324,111 +231,65 @@ const Navbar = () => {
   );
 };
 
-// ==================== FOOTER ====================
+// Footer
 const Footer = () => {
   const [email, setEmail] = useState("");
   const [subscribed, setSubscribed] = useState(false);
 
   const handleSubscribe = async (e) => {
     e.preventDefault();
-    try {
-      await axios.post(`${API}/newsletter/subscribe`, { email });
-      setSubscribed(true);
-      toast.success("Welcome to Fleur family!");
-    } catch { toast.error("Failed to subscribe"); }
+    try { await axios.post(`${API}/newsletter/subscribe`, { email }); setSubscribed(true); toast.success("Welcome to Fleur family!"); }
+    catch { toast.error("Failed to subscribe"); }
   };
 
   return (
-    <footer data-testid="footer" className="relative mt-32 pt-24 pb-12 border-t border-border/30">
+    <footer className="relative mt-32 pt-24 pb-12 border-t border-border/30">
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
-        {/* Main Footer */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-16 mb-20">
-          {/* Brand */}
-          <div className="lg:col-span-1">
-            <div className="mb-6">
-              <span className="font-['Cormorant_Garamond'] text-4xl tracking-[0.15em] font-light gold-text">FLEUR</span>
-              <p className="text-[10px] tracking-[0.35em] text-muted-foreground mt-1">FRAGRANCES</p>
-            </div>
-            <p className="text-sm text-muted-foreground leading-relaxed mb-6">
-              Crafting exquisite aroma experiences since 2015. Premium oils for homes, offices & commercial spaces.
-            </p>
+          <div>
+            <span className="font-['Cormorant_Garamond'] text-4xl tracking-[0.15em] font-light gold-text">FLEUR</span>
+            <p className="text-[9px] tracking-[0.35em] text-muted-foreground mt-1 mb-4">FRAGRANCES</p>
+            <p className="text-sm text-muted-foreground leading-relaxed mb-6">Crafted in India, Trusted by Luxury Hotels — Now for You.</p>
             <div className="flex gap-3">
               {[Instagram, Facebook, Twitter].map((Icon, i) => (
-                <a key={i} href="#" className="w-10 h-10 rounded-full border border-border/30 flex items-center justify-center hover:border-amber-500 hover:text-amber-500 transition-all">
-                  <Icon size={16} strokeWidth={1.5} />
-                </a>
+                <a key={i} href="#" className="w-10 h-10 rounded-full border border-border/30 flex items-center justify-center hover:border-amber-500 hover:text-amber-500 transition-all"><Icon size={16} /></a>
               ))}
             </div>
           </div>
-
-          {/* Quick Links */}
           <div>
             <h4 className="font-['Cormorant_Garamond'] text-xl mb-6">Explore</h4>
             <ul className="space-y-3">
-              {["Shop", "About Us", "Services", "Contact", "AI Finder"].map((item) => (
-                <li key={item}>
-                  <Link to={`/${item.toLowerCase().replace(" ", "-")}`} className="text-sm text-muted-foreground hover:text-amber-500 transition-colors">
-                    {item}
-                  </Link>
-                </li>
+              {["Shop", "Portfolio", "About Us", "Contact", "AI Finder"].map(item => (
+                <li key={item}><Link to={`/${item.toLowerCase().replace(" ", "-")}`} className="text-sm text-muted-foreground hover:text-amber-500 transition-colors">{item}</Link></li>
               ))}
             </ul>
           </div>
-
-          {/* Contact */}
           <div>
             <h4 className="font-['Cormorant_Garamond'] text-xl mb-6">Contact</h4>
             <ul className="space-y-4">
-              <li className="flex items-start gap-3 text-sm text-muted-foreground">
-                <MapPin size={16} className="text-amber-500 mt-0.5 flex-shrink-0" />
-                Mumbai, Maharashtra, India
-              </li>
-              <li className="flex items-center gap-3 text-sm text-muted-foreground">
-                <Phone size={16} className="text-amber-500 flex-shrink-0" />
-                +91 98765 43210
-              </li>
-              <li className="flex items-center gap-3 text-sm text-muted-foreground">
-                <Mail size={16} className="text-amber-500 flex-shrink-0" />
-                hello@fleurfragrances.com
-              </li>
+              <li className="flex items-start gap-3 text-sm text-muted-foreground"><MapPin size={16} className="text-amber-500 mt-0.5" />Mumbai, Maharashtra, India</li>
+              <li className="flex items-center gap-3 text-sm text-muted-foreground"><Phone size={16} className="text-amber-500" />+91 98765 43210</li>
+              <li className="flex items-center gap-3 text-sm text-muted-foreground"><Mail size={16} className="text-amber-500" />hello@fleurfragrances.com</li>
             </ul>
           </div>
-
-          {/* Newsletter */}
           <div>
             <h4 className="font-['Cormorant_Garamond'] text-xl mb-6">Newsletter</h4>
-            <p className="text-sm text-muted-foreground mb-4">
-              Receive exclusive offers & fragrance tips.
-            </p>
+            <p className="text-sm text-muted-foreground mb-4">Exclusive offers & fragrance tips.</p>
             {subscribed ? (
-              <div className="flex items-center gap-2 text-amber-500">
-                <Check size={18} />
-                <span className="text-sm">You're subscribed!</span>
-              </div>
+              <div className="flex items-center gap-2 text-amber-500"><Check size={18} /><span className="text-sm">You're subscribed!</span></div>
             ) : (
               <form onSubmit={handleSubscribe} className="space-y-3">
-                <input
-                  type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Your email" data-testid="newsletter-email"
-                  className="w-full px-4 py-3 bg-foreground/5 border border-border/30 text-sm focus:outline-none focus:border-amber-500 transition-colors"
-                  required
-                />
-                <button type="submit" data-testid="newsletter-submit"
-                  className="w-full py-3 bg-amber-500 text-black text-[11px] tracking-[0.15em] uppercase hover:bg-amber-400 transition-colors">
-                  Subscribe
-                </button>
+                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Your email" className="w-full px-4 py-3 bg-foreground/5 border border-border/30 text-sm focus:outline-none focus:border-amber-500" required />
+                <button type="submit" className="w-full py-3 bg-amber-500 text-black text-[11px] tracking-[0.15em] uppercase hover:bg-amber-400">Subscribe</button>
               </form>
             )}
           </div>
         </div>
-
-        {/* Bottom Bar */}
         <div className="pt-8 border-t border-border/20 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-xs text-muted-foreground">© 2025 Fleur Fragrances. All rights reserved.</p>
           <div className="flex gap-8 text-xs text-muted-foreground">
-            <Link to="/privacy" className="hover:text-amber-500 transition-colors">Privacy</Link>
-            <Link to="/terms" className="hover:text-amber-500 transition-colors">Terms</Link>
-            <Link to="/shipping" className="hover:text-amber-500 transition-colors">Shipping</Link>
+            <Link to="/privacy" className="hover:text-amber-500">Privacy</Link>
+            <Link to="/terms" className="hover:text-amber-500">Terms</Link>
           </div>
         </div>
       </div>
@@ -436,7 +297,7 @@ const Footer = () => {
   );
 };
 
-// ==================== PRODUCT CARD ====================
+// Product Card
 const ProductCard = ({ product }) => {
   const { addToCart, addToWishlist, isInWishlist, removeFromWishlist } = useCart();
   const navigate = useNavigate();
@@ -446,216 +307,91 @@ const ProductCard = ({ product }) => {
   return (
     <motion.div
       data-testid={`product-card-${product.slug}`}
-      initial={{ opacity: 0, y: 30 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
+      initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
       onClick={() => navigate(`/product/${product.slug}`)}
       className="group card-premium glass rounded-lg overflow-hidden cursor-pointer"
     >
       <div className="relative img-zoom aspect-[3/4]">
         <img src={productImage} alt={product.name} className="w-full h-full object-cover" loading="lazy" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-        
-        {/* Badges */}
         <div className="absolute top-4 left-4 flex flex-col gap-2">
-          {product.is_bestseller && (
-            <span className="px-3 py-1.5 bg-amber-500 text-black text-[10px] tracking-[0.1em] uppercase">Bestseller</span>
-          )}
-          {product.is_new && (
-            <span className="px-3 py-1.5 bg-white text-black text-[10px] tracking-[0.1em] uppercase">New</span>
-          )}
+          {product.is_bestseller && <span className="px-3 py-1.5 bg-amber-500 text-black text-[10px] tracking-[0.1em] uppercase">Bestseller</span>}
+          {product.is_new && <span className="px-3 py-1.5 bg-white text-black text-[10px] tracking-[0.1em] uppercase">New</span>}
         </div>
-
-        {/* Wishlist */}
-        <button
-          onClick={(e) => { e.stopPropagation(); inWishlist ? removeFromWishlist(product.id) : addToWishlist(product.id); }}
-          data-testid={`wishlist-btn-${product.slug}`}
-          className={`absolute top-4 right-4 p-2.5 rounded-full glass opacity-0 group-hover:opacity-100 transition-all ${inWishlist ? "text-red-400" : ""}`}
-        >
-          <Heart size={18} strokeWidth={1.5} fill={inWishlist ? "currentColor" : "none"} />
+        <button onClick={(e) => { e.stopPropagation(); inWishlist ? removeFromWishlist(product.id) : addToWishlist(product.id); }} className={`absolute top-4 right-4 p-2.5 rounded-full glass opacity-0 group-hover:opacity-100 transition-all ${inWishlist ? "text-red-400" : ""}`}>
+          <Heart size={18} fill={inWishlist ? "currentColor" : "none"} />
         </button>
-
-        {/* Add to Cart */}
-        <motion.button
-          onClick={(e) => { e.stopPropagation(); addToCart(product.id); }}
-          data-testid={`add-to-cart-${product.slug}`}
-          className="absolute bottom-4 left-4 right-4 py-3 bg-white/95 text-black text-[11px] tracking-[0.15em] uppercase opacity-0 group-hover:opacity-100 transition-all duration-500 hover:bg-amber-500"
-        >
+        <motion.button onClick={(e) => { e.stopPropagation(); addToCart(product.id); }} className="absolute bottom-4 left-4 right-4 py-3 bg-white/95 text-black text-[11px] tracking-[0.15em] uppercase opacity-0 group-hover:opacity-100 transition-all duration-500 hover:bg-amber-500">
           Add to Cart
         </motion.button>
       </div>
-
       <div className="p-5">
         <p className="text-[10px] tracking-[0.2em] text-amber-500/80 uppercase mb-2">{product.scent_family}</p>
         <h3 className="font-['Cormorant_Garamond'] text-xl mb-2 group-hover:text-amber-500 transition-colors">{product.name}</h3>
         <p className="text-xs text-muted-foreground line-clamp-2 mb-4">{product.short_description}</p>
-        
         <div className="flex items-center justify-between">
           <div className="flex items-baseline gap-2">
             <span className="font-['Cormorant_Garamond'] text-2xl">₹{product.price.toFixed(0)}</span>
-            {product.original_price > product.price && (
-              <span className="text-xs text-muted-foreground line-through">₹{product.original_price.toFixed(0)}</span>
-            )}
+            {product.original_price > product.price && <span className="text-xs text-muted-foreground line-through">₹{product.original_price.toFixed(0)}</span>}
           </div>
-          <div className="flex items-center gap-1">
-            <Star size={12} className="fill-amber-500 text-amber-500" />
-            <span className="text-xs">{product.rating}</span>
-          </div>
+          <div className="flex items-center gap-1"><Star size={12} className="fill-amber-500 text-amber-500" /><span className="text-xs">{product.rating}</span></div>
         </div>
       </div>
     </motion.div>
   );
 };
 
-// ==================== AI CHAT WIDGET ====================
+// Chat Widget
 const ChatWidget = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState([
-    { role: "assistant", content: "Welcome to Fleur. I'm your personal fragrance consultant — ask me anything about scents, or upload an image to identify a perfume." }
-  ]);
+  const [messages, setMessages] = useState([{ role: "assistant", content: "Welcome to Fleur. I'm your personal fragrance consultant — ask me anything about scents, or upload an image to identify a perfume." }]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [sessionId, setSessionId] = useState(null);
-  const [showUpload, setShowUpload] = useState(false);
   const messagesEndRef = useRef(null);
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
   const sendMessage = async (e) => {
     e.preventDefault();
     if (!input.trim() || loading) return;
-
     const userMessage = input.trim();
-    setInput("");
-    setMessages(prev => [...prev, { role: "user", content: userMessage }]);
-    setLoading(true);
-
+    setInput(""); setMessages(prev => [...prev, { role: "user", content: userMessage }]); setLoading(true);
     try {
       const { data } = await axios.post(`${API}/ai/chat`, { message: userMessage, session_id: sessionId });
-      setSessionId(data.session_id);
-      setMessages(prev => [...prev, { role: "assistant", content: data.response }]);
-    } catch {
-      setMessages(prev => [...prev, { role: "assistant", content: "I apologize, I'm having trouble responding. Please try again." }]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleImageUpload = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setLoading(true);
-    setMessages(prev => [...prev, { role: "user", content: "📷 [Uploaded image for identification]" }]);
-
-    try {
-      const reader = new FileReader();
-      reader.onload = async () => {
-        const base64 = reader.result.split(",")[1];
-        const { data } = await axios.post(`${API}/ai/identify-perfume`, { image_base64: base64, question: "Identify this perfume and suggest similar Fleur fragrances" });
-        setMessages(prev => [...prev, { role: "assistant", content: data.analysis }]);
-        setLoading(false);
-      };
-      reader.readAsDataURL(file);
-    } catch {
-      setMessages(prev => [...prev, { role: "assistant", content: "I couldn't analyze that image. Please try another." }]);
-      setLoading(false);
-    }
-    setShowUpload(false);
+      setSessionId(data.session_id); setMessages(prev => [...prev, { role: "assistant", content: data.response }]);
+    } catch { setMessages(prev => [...prev, { role: "assistant", content: "I apologize, I'm having trouble responding. Please try again." }]); }
+    finally { setLoading(false); }
   };
 
   return (
     <>
-      {/* Chat Button */}
-      <motion.button
-        onClick={() => setIsOpen(!isOpen)}
-        data-testid="chat-widget-btn"
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        className="fixed bottom-6 right-6 z-50 w-14 h-14 bg-amber-500 text-black rounded-full shadow-lg glow-gold flex items-center justify-center"
-      >
+      <motion.button onClick={() => setIsOpen(!isOpen)} data-testid="chat-widget-btn" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+        className="fixed bottom-6 right-6 z-50 w-14 h-14 bg-amber-500 text-black rounded-full shadow-lg glow-gold flex items-center justify-center">
         {isOpen ? <X size={22} /> : <MessageCircle size={22} />}
       </motion.button>
-
-      {/* Chat Panel */}
       <AnimatePresence>
         {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: 20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            data-testid="chat-panel"
-            className="fixed bottom-24 right-6 z-50 w-[380px] max-w-[calc(100vw-3rem)] glass-heavy rounded-lg shadow-2xl overflow-hidden flex flex-col"
-            style={{ maxHeight: "500px" }}
-          >
-            {/* Header */}
+          <motion.div initial={{ opacity: 0, y: 20, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            data-testid="chat-panel" className="fixed bottom-24 right-6 z-50 w-[380px] max-w-[calc(100vw-3rem)] glass-heavy rounded-lg shadow-2xl overflow-hidden flex flex-col" style={{ maxHeight: "500px" }}>
             <div className="p-4 border-b border-border/20 flex items-center gap-3 bg-gradient-to-r from-amber-500/10 to-transparent">
-              <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center">
-                <Sparkles size={18} className="text-amber-500" />
-              </div>
-              <div>
-                <h4 className="font-['Cormorant_Garamond'] text-lg">Fleur AI</h4>
-                <p className="text-[10px] tracking-[0.1em] text-muted-foreground uppercase">Fragrance Consultant</p>
-              </div>
+              <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center"><Sparkles size={18} className="text-amber-500" /></div>
+              <div><h4 className="font-['Cormorant_Garamond'] text-lg">Fleur AI</h4><p className="text-[10px] tracking-[0.1em] text-muted-foreground uppercase">Fragrance Consultant</p></div>
             </div>
-
-            {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4" style={{ maxHeight: "300px" }}>
               {messages.map((msg, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-                >
-                  <div className={`max-w-[85%] p-3 text-sm leading-relaxed ${
-                    msg.role === "user"
-                      ? "bg-amber-500 text-black rounded-t-lg rounded-bl-lg"
-                      : "bg-foreground/5 rounded-t-lg rounded-br-lg"
-                  }`}>
-                    {msg.content}
-                  </div>
+                <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+                  <div className={`max-w-[85%] p-3 text-sm leading-relaxed ${msg.role === "user" ? "bg-amber-500 text-black rounded-t-lg rounded-bl-lg" : "bg-foreground/5 rounded-t-lg rounded-br-lg"}`}>{msg.content}</div>
                 </motion.div>
               ))}
-              {loading && (
-                <div className="flex justify-start">
-                  <div className="bg-foreground/5 p-3 rounded-t-lg rounded-br-lg">
-                    <div className="flex gap-1.5">
-                      {[0, 1, 2].map(i => (
-                        <span key={i} className="w-2 h-2 bg-amber-500/50 rounded-full animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
+              {loading && <div className="flex justify-start"><div className="bg-foreground/5 p-3 rounded-t-lg rounded-br-lg"><div className="flex gap-1.5">{[0,1,2].map(i=><span key={i} className="w-2 h-2 bg-amber-500/50 rounded-full animate-bounce" style={{animationDelay:`${i*0.15}s`}}/>)}</div></div></div>}
               <div ref={messagesEndRef} />
             </div>
-
-            {/* Input */}
-            <div className="p-4 border-t border-border/20">
-              {showUpload && (
-                <div className="mb-3 p-3 bg-foreground/5 rounded-lg">
-                  <p className="text-xs text-muted-foreground mb-2">Upload a perfume image to identify</p>
-                  <input type="file" accept="image/*" onChange={handleImageUpload} className="text-xs" />
-                </div>
-              )}
-              <form onSubmit={sendMessage} className="flex gap-2">
-                <button type="button" onClick={() => setShowUpload(!showUpload)} className="p-3 hover:bg-foreground/5 rounded-lg transition-colors">
-                  <Camera size={18} className="text-amber-500" />
-                </button>
-                <input
-                  type="text" value={input} onChange={(e) => setInput(e.target.value)}
-                  placeholder="Ask about fragrances..." data-testid="chat-input"
-                  className="flex-1 px-4 py-3 bg-foreground/5 border border-border/20 text-sm focus:outline-none focus:border-amber-500 transition-colors rounded-lg"
-                />
-                <button type="submit" data-testid="chat-send-btn" disabled={loading}
-                  className="p-3 bg-amber-500 text-black rounded-lg hover:bg-amber-400 transition-colors disabled:opacity-50">
-                  <Send size={18} />
-                </button>
-              </form>
-            </div>
+            <form onSubmit={sendMessage} className="p-4 border-t border-border/20 flex gap-2">
+              <input type="text" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Ask about fragrances..." data-testid="chat-input"
+                className="flex-1 px-4 py-3 bg-foreground/5 border border-border/20 text-sm focus:outline-none focus:border-amber-500 rounded-lg" />
+              <button type="submit" disabled={loading} className="p-3 bg-amber-500 text-black rounded-lg hover:bg-amber-400 transition-colors disabled:opacity-50"><Send size={18} /></button>
+            </form>
           </motion.div>
         )}
       </AnimatePresence>
@@ -663,177 +399,229 @@ const ChatWidget = () => {
   );
 };
 
-// ==================== HOME PAGE ====================
+// Stats Counter Component
+const StatsCounter = ({ stats }) => (
+  <div className="grid grid-cols-2 md:grid-cols-4 gap-8 py-16">
+    {[
+      { icon: <Award />, value: stats?.years_experience || 10, label: "Years Experience", suffix: "+" },
+      { icon: <Building2 />, value: stats?.luxury_hotels || 40, label: "Luxury Hotels", suffix: "+" },
+      { icon: <Users />, value: (stats?.happy_customers || 50000) / 1000, label: "Happy Customers", suffix: "K+" },
+      { icon: <Package />, value: stats?.fragrances_crafted || 200, label: "Fragrances Crafted", suffix: "+" }
+    ].map((stat, i) => (
+      <motion.div key={i} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }} className="text-center">
+        <div className="w-14 h-14 mx-auto mb-4 rounded-full border border-amber-500/30 flex items-center justify-center text-amber-500">{stat.icon}</div>
+        <p className="font-['Cormorant_Garamond'] text-4xl mb-1">{stat.value}{stat.suffix}</p>
+        <p className="text-xs tracking-[0.15em] uppercase text-muted-foreground">{stat.label}</p>
+      </motion.div>
+    ))}
+  </div>
+);
+
+// Testimonials Carousel
+const TestimonialsSection = ({ testimonials }) => {
+  const [current, setCurrent] = useState(0);
+  if (!testimonials?.length) return null;
+
+  return (
+    <section className="py-24 relative overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-b from-amber-500/5 to-transparent" />
+      <div className="relative max-w-7xl mx-auto px-6 lg:px-8">
+        <div className="text-center mb-16">
+          <p className="text-[11px] tracking-[0.3em] text-amber-500 mb-3">TESTIMONIALS</p>
+          <h2 className="font-['Cormorant_Garamond'] text-4xl lg:text-5xl">What Our Customers Say</h2>
+        </div>
+
+        <div className="relative max-w-4xl mx-auto">
+          <AnimatePresence mode="wait">
+            <motion.div key={current} initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }} className="glass-heavy rounded-2xl p-8 md:p-12 text-center">
+              <Quote size={40} className="mx-auto text-amber-500/30 mb-6" />
+              <p className="text-lg md:text-xl leading-relaxed mb-8 text-muted-foreground italic">"{testimonials[current].text}"</p>
+              <div className="flex items-center justify-center gap-4">
+                <img src={testimonials[current].avatar} alt={testimonials[current].name} className="w-14 h-14 rounded-full object-cover border-2 border-amber-500/30" />
+                <div className="text-left">
+                  <p className="font-['Cormorant_Garamond'] text-xl">{testimonials[current].name}</p>
+                  <p className="text-xs text-muted-foreground">{testimonials[current].title}</p>
+                  <div className="flex items-center gap-1 mt-1">
+                    {[...Array(testimonials[current].rating)].map((_, i) => <Star key={i} size={12} className="fill-amber-500 text-amber-500" />)}
+                    {testimonials[current].verified && <span className="ml-2 text-[10px] text-green-500 flex items-center gap-1"><Check size={10} />Verified</span>}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </AnimatePresence>
+
+          <div className="flex justify-center items-center gap-4 mt-8">
+            <button onClick={() => setCurrent((current - 1 + testimonials.length) % testimonials.length)} className="p-3 glass rounded-full hover:bg-amber-500/10"><ChevronLeft size={20} /></button>
+            <div className="flex gap-2">
+              {testimonials.map((_, i) => <button key={i} onClick={() => setCurrent(i)} className={`w-2 h-2 rounded-full transition-all ${current === i ? "bg-amber-500 w-6" : "bg-foreground/20"}`} />)}
+            </div>
+            <button onClick={() => setCurrent((current + 1) % testimonials.length)} className="p-3 glass rounded-full hover:bg-amber-500/10"><ChevronRight size={20} /></button>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+// Portfolio Section
+const PortfolioSection = ({ clients }) => {
+  if (!clients?.length) return null;
+
+  return (
+    <section className="py-24">
+      <div className="max-w-7xl mx-auto px-6 lg:px-8">
+        <div className="text-center mb-16">
+          <p className="text-[11px] tracking-[0.3em] text-amber-500 mb-3">TRUSTED BY THE BEST</p>
+          <h2 className="font-['Cormorant_Garamond'] text-4xl lg:text-5xl mb-4">Our Prestigious Clients</h2>
+          <p className="text-muted-foreground max-w-2xl mx-auto">For over a decade, we've been the fragrance partner of choice for India's most prestigious hotels and corporate spaces.</p>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+          {clients.map((client, i) => (
+            <motion.div key={client.id} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}
+              className="glass p-6 text-center card-premium rounded-lg">
+              <div className="h-16 flex items-center justify-center mb-4">
+                <p className="font-['Cormorant_Garamond'] text-lg text-amber-500">{client.name}</p>
+              </div>
+              <p className="text-xs text-muted-foreground">{client.category}</p>
+              <p className="text-[10px] text-amber-500/60 mt-1">{client.locations}+ locations</p>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};
+
+// HOME PAGE
 const HomePage = () => {
   const [products, setProducts] = useState([]);
+  const [brandStory, setBrandStory] = useState(null);
+  const [testimonials, setTestimonials] = useState([]);
+  const [portfolio, setPortfolio] = useState([]);
   const navigate = useNavigate();
-  const { scrollYProgress } = useScroll();
-  const heroOpacity = useTransform(scrollYProgress, [0, 0.3], [1, 0]);
 
   useEffect(() => {
-    axios.get(`${API}/products`).then(({ data }) => setProducts(data)).catch(() => {});
+    Promise.all([
+      axios.get(`${API}/products`),
+      axios.get(`${API}/brand-story`),
+      axios.get(`${API}/testimonials`),
+      axios.get(`${API}/portfolio`)
+    ]).then(([prod, brand, test, port]) => {
+      setProducts(prod.data);
+      setBrandStory(brand.data);
+      setTestimonials(test.data.testimonials);
+      setPortfolio(port.data.clients);
+    }).catch(() => {});
   }, []);
 
   return (
     <main data-testid="home-page">
-      {/* Hero Section */}
+      {/* Hero */}
       <section className="relative h-screen flex items-center justify-center overflow-hidden">
-        <motion.div style={{ opacity: heroOpacity }} className="absolute inset-0">
+        <div className="absolute inset-0">
           <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/40 to-background z-10" />
           <video autoPlay muted loop playsInline className="w-full h-full object-cover opacity-60">
             <source src="https://assets.mixkit.co/videos/preview/mixkit-smoke-swirling-in-slow-motion-1238-large.mp4" type="video/mp4" />
           </video>
-        </motion.div>
+        </div>
 
-        {/* Floating Gold Particles */}
         <div className="absolute inset-0 overflow-hidden z-10">
           {[...Array(20)].map((_, i) => (
-            <motion.div
-              key={i}
-              className="absolute w-1 h-1 bg-amber-500/30 rounded-full"
-              style={{ left: `${Math.random() * 100}%`, top: `${Math.random() * 100}%` }}
-              animate={{ y: [0, -30, 0], opacity: [0.3, 0.8, 0.3] }}
-              transition={{ duration: 3 + Math.random() * 2, repeat: Infinity, delay: Math.random() * 2 }}
-            />
+            <motion.div key={i} className="absolute w-1 h-1 bg-amber-500/30 rounded-full" style={{ left: `${Math.random() * 100}%`, top: `${Math.random() * 100}%` }}
+              animate={{ y: [0, -30, 0], opacity: [0.3, 0.8, 0.3] }} transition={{ duration: 3 + Math.random() * 2, repeat: Infinity, delay: Math.random() * 2 }} />
           ))}
         </div>
 
-        {/* Content */}
         <div className="relative z-20 max-w-6xl mx-auto px-6 text-center">
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="text-[11px] tracking-[0.4em] text-amber-500/80 mb-8"
-          >
-            SPREADING DELIGHTFUL AROMAS SINCE 2015
-          </motion.p>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+            className="inline-flex items-center gap-3 px-5 py-2 glass rounded-full mb-8">
+            <Award size={14} className="text-amber-500" />
+            <span className="text-[11px] tracking-[0.2em] uppercase">{brandStory?.heritage_years || 10}+ Years of Luxury Heritage</span>
+          </motion.div>
           
-          <motion.h1
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            className="font-['Cormorant_Garamond'] text-5xl sm:text-7xl lg:text-8xl font-light mb-8 leading-[0.95]"
-          >
-            Captivate Your<br />
-            <span className="gold-text italic">Senses</span>
+          <motion.h1 initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
+            className="font-['Cormorant_Garamond'] text-5xl sm:text-7xl lg:text-8xl font-light mb-6 leading-[0.95]">
+            Captivate Your<br /><span className="gold-text italic">Senses</span>
           </motion.h1>
 
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.7 }}
-            className="text-muted-foreground text-lg max-w-xl mx-auto mb-12 font-light"
-          >
-            The enchanting scents of nature — where every fragrance tells a story and every aroma creates a memory.
+          <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}
+            className="text-lg text-muted-foreground max-w-2xl mx-auto mb-4 font-light">
+            {brandStory?.mission || "Crafted in India, Trusted by Luxury Hotels — Now for You"}
           </motion.p>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.9 }}
-            className="flex flex-col sm:flex-row gap-4 justify-center"
-          >
-            <button onClick={() => navigate("/shop")} data-testid="hero-shop-btn"
-              className="btn-luxury bg-amber-500 text-black glow-gold">
-              Explore Collection
-            </button>
-            <button onClick={() => navigate("/scent-finder")} data-testid="hero-scent-finder-btn"
-              className="btn-luxury border border-foreground/20 hover:border-amber-500 hover:text-amber-500">
-              <Sparkles size={14} className="inline mr-2" />
-              AI Scent Finder
+          <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }}
+            className="text-sm text-muted-foreground max-w-xl mx-auto mb-12">
+            Premium aroma oils that have transformed the ambiance of India's finest hotels and corporate spaces — now available for your home.
+          </motion.p>
+
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.9 }} className="flex flex-col sm:flex-row gap-4 justify-center">
+            <button onClick={() => navigate("/shop")} data-testid="hero-shop-btn" className="btn-luxury bg-amber-500 text-black glow-gold">Explore Collection</button>
+            <button onClick={() => navigate("/scent-finder")} data-testid="hero-scent-finder-btn" className="btn-luxury border border-foreground/20 hover:border-amber-500 hover:text-amber-500">
+              <Sparkles size={14} className="inline mr-2" />AI Scent Finder
             </button>
           </motion.div>
         </div>
 
-        {/* Scroll Indicator */}
-        <motion.div
-          animate={{ y: [0, 10, 0] }}
-          transition={{ duration: 2, repeat: Infinity }}
-          className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
-        >
+        <motion.div animate={{ y: [0, 10, 0] }} transition={{ duration: 2, repeat: Infinity }} className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
           <span className="text-[10px] tracking-[0.2em] text-muted-foreground">SCROLL</span>
           <ChevronDown size={16} className="text-amber-500" />
         </motion.div>
       </section>
 
-      {/* Marquee Banner */}
-      <div className="py-6 bg-amber-500/5 border-y border-amber-500/10 overflow-hidden">
-        <div className="animate-marquee whitespace-nowrap flex items-center gap-12">
-          {[...Array(3)].map((_, i) => (
-            <div key={i} className="flex items-center gap-12">
-              {["Premium Quality", "10+ Years Experience", "Pan-India Delivery", "Natural Ingredients", "Luxury Fragrances"].map((text, j) => (
-                <span key={j} className="text-[11px] tracking-[0.2em] uppercase text-foreground/60 flex items-center gap-3">
-                  <span className="w-1.5 h-1.5 bg-amber-500 rounded-full" />
-                  {text}
-                </span>
-              ))}
-            </div>
-          ))}
+      {/* Stats */}
+      <section className="py-8 border-y border-border/20">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8">
+          <StatsCounter stats={brandStory?.stats} />
         </div>
-      </div>
+      </section>
 
-      {/* Featured Collection */}
+      {/* Portfolio Clients */}
+      <PortfolioSection clients={portfolio} />
+
+      {/* Products */}
       <section className="py-24" data-testid="products-section">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="flex items-end justify-between mb-16">
             <div>
               <p className="text-[11px] tracking-[0.3em] text-amber-500 mb-3">OUR COLLECTION</p>
               <h2 className="font-['Cormorant_Garamond'] text-4xl lg:text-5xl">Curated Fragrances</h2>
+              <p className="text-muted-foreground mt-2 max-w-lg">The same premium fragrances trusted by luxury hotels — now for your home.</p>
             </div>
-            <Link to="/shop" className="hidden md:flex items-center gap-2 text-[12px] tracking-[0.15em] uppercase hover:text-amber-500 transition-colors">
-              View All <ArrowRight size={14} />
-            </Link>
+            <Link to="/shop" className="hidden md:flex items-center gap-2 text-[12px] tracking-[0.15em] uppercase hover:text-amber-500">View All <ArrowRight size={14} /></Link>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {products.slice(0, 8).map((product, i) => (
-              <motion.div
-                key={product.id}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-              >
+              <motion.div key={product.id} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}>
                 <ProductCard product={product} />
               </motion.div>
             ))}
           </div>
-
-          <div className="text-center mt-12 md:hidden">
-            <Link to="/shop" className="inline-flex items-center gap-2 text-[12px] tracking-[0.15em] uppercase text-amber-500">
-              View All Products <ArrowRight size={14} />
-            </Link>
-          </div>
         </div>
       </section>
 
-      {/* Why Fleur Section */}
+      {/* Testimonials */}
+      <TestimonialsSection testimonials={testimonials} />
+
+      {/* Why Fleur */}
       <section className="py-24 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-amber-500/5 to-transparent" />
-        <div className="relative max-w-7xl mx-auto px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="text-center mb-16">
             <p className="text-[11px] tracking-[0.3em] text-amber-500 mb-3">THE FLEUR DIFFERENCE</p>
             <h2 className="font-['Cormorant_Garamond'] text-4xl lg:text-5xl">Why Choose Us</h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {[
-              { icon: <Sparkles size={28} />, title: "Premium Quality", desc: "Internationally-approved ingredients crafted to perfection" },
-              { icon: <Package size={28} />, title: "Artisan Crafted", desc: "Each fragrance meticulously blended by expert perfumers" },
-              { icon: <Truck size={28} />, title: "Swift Delivery", desc: "Pan-India shipping with secure, elegant packaging" }
+              { icon: <Award />, title: "Heritage", desc: "10+ years serving India's finest hotels" },
+              { icon: <Leaf />, title: "Natural", desc: "Premium ingredients, sustainably sourced" },
+              { icon: <Sparkles />, title: "Premium", desc: "Luxury quality at accessible prices" },
+              { icon: <Gift />, title: "Experience", desc: "Curated scents for every mood and space" }
             ].map((item, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.2 }}
-                className="glass p-10 text-center card-premium"
-              >
-                <div className="w-16 h-16 mx-auto mb-6 rounded-full border border-amber-500/30 flex items-center justify-center text-amber-500">
-                  {item.icon}
-                </div>
+              <motion.div key={i} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.15 }}
+                className="glass p-8 text-center card-premium rounded-lg">
+                <div className="w-14 h-14 mx-auto mb-6 rounded-full border border-amber-500/30 flex items-center justify-center text-amber-500">{item.icon}</div>
                 <h3 className="font-['Cormorant_Garamond'] text-2xl mb-3">{item.title}</h3>
                 <p className="text-sm text-muted-foreground">{item.desc}</p>
               </motion.div>
@@ -842,52 +630,18 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* CTA Section */}
+      {/* CTA */}
       <section className="py-24 relative overflow-hidden">
         <div className="absolute inset-0">
-          <img src="https://images.unsplash.com/photo-1671493233978-364fd0e59c93?w=1920&q=60" alt="Ambiance" className="w-full h-full object-cover opacity-20" />
+          <img src="https://images.pexels.com/photos/3685530/pexels-photo-3685530.jpeg?auto=compress&cs=tinysrgb&w=1920" alt="Ambiance" className="w-full h-full object-cover opacity-20" />
           <div className="absolute inset-0 bg-gradient-to-r from-background via-background/90 to-background/70" />
         </div>
-        
         <div className="relative max-w-7xl mx-auto px-6 lg:px-8">
           <div className="max-w-2xl">
-            <motion.p
-              initial={{ opacity: 0, x: -20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              className="text-[11px] tracking-[0.3em] text-amber-500 mb-4"
-            >
-              PERSONALIZED EXPERIENCE
-            </motion.p>
-            <motion.h2
-              initial={{ opacity: 0, x: -20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.1 }}
-              className="font-['Cormorant_Garamond'] text-4xl lg:text-5xl mb-6"
-            >
-              Not Sure Which Scent<br />Is Right For You?
-            </motion.h2>
-            <motion.p
-              initial={{ opacity: 0, x: -20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.2 }}
-              className="text-muted-foreground text-lg mb-8 font-light"
-            >
-              Let our AI-powered Scent Finder help you discover your perfect fragrance based on your preferences.
-            </motion.p>
-            <motion.button
-              initial={{ opacity: 0, x: -20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.3 }}
-              onClick={() => navigate("/scent-finder")}
-              className="btn-luxury bg-amber-500 text-black glow-gold"
-            >
-              <Sparkles size={14} className="inline mr-2" />
-              Start Scent Quiz
-            </motion.button>
+            <p className="text-[11px] tracking-[0.3em] text-amber-500 mb-4">PERSONALIZED EXPERIENCE</p>
+            <h2 className="font-['Cormorant_Garamond'] text-4xl lg:text-5xl mb-6">Not Sure Which Scent<br />Is Right For You?</h2>
+            <p className="text-muted-foreground text-lg mb-8 font-light">Let our AI-powered Scent Finder help you discover your perfect fragrance based on your preferences.</p>
+            <button onClick={() => navigate("/scent-finder")} className="btn-luxury bg-amber-500 text-black glow-gold"><Sparkles size={14} className="inline mr-2" />Start Scent Quiz</button>
           </div>
         </div>
       </section>
@@ -895,31 +649,27 @@ const HomePage = () => {
   );
 };
 
-// ==================== SHOP PAGE ====================
+// SHOP PAGE
 const ShopPage = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [categories, setCategories] = useState({ categories: [], scent_families: [] });
-  const [filters, setFilters] = useState({ category: "", scent_family: "", sort: "newest" });
+  const [categories, setCategories] = useState({ scent_families: [] });
+  const [filters, setFilters] = useState({ scent_family: "", sort: "newest" });
 
-  useEffect(() => { fetchProducts(); fetchCategories(); }, [filters]);
-
-  const fetchProducts = async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams();
-      if (filters.scent_family) params.append("scent_family", filters.scent_family);
-      if (filters.sort) params.append("sort", filters.sort);
-      const { data } = await axios.get(`${API}/products?${params}`);
-      setProducts(data);
-    } catch (e) { console.error("Failed"); }
-    finally { setLoading(false); }
-  };
-
-  const fetchCategories = async () => {
-    try { const { data } = await axios.get(`${API}/categories`); setCategories(data); }
-    catch (e) { console.error("Failed"); }
-  };
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const params = new URLSearchParams();
+        if (filters.scent_family) params.append("scent_family", filters.scent_family);
+        if (filters.sort) params.append("sort", filters.sort);
+        const [prods, cats] = await Promise.all([axios.get(`${API}/products?${params}`), axios.get(`${API}/categories`)]);
+        setProducts(prods.data);
+        setCategories(cats.data);
+      } catch {} finally { setLoading(false); }
+    };
+    fetchData();
+  }, [filters]);
 
   return (
     <main data-testid="shop-page" className="pt-32 pb-24">
@@ -927,53 +677,34 @@ const ShopPage = () => {
         <div className="text-center mb-16">
           <p className="text-[11px] tracking-[0.3em] text-amber-500 mb-3">OUR COLLECTION</p>
           <h1 className="font-['Cormorant_Garamond'] text-4xl lg:text-5xl mb-4">Shop All Fragrances</h1>
-          <p className="text-muted-foreground max-w-xl mx-auto">Discover our curated collection of premium aroma oils.</p>
+          <p className="text-muted-foreground max-w-xl mx-auto">Premium aroma oils trusted by luxury hotels — now for your home.</p>
         </div>
 
-        {/* Filters */}
-        <div className="glass rounded-lg p-6 mb-12">
-          <div className="flex flex-wrap gap-4 items-center justify-between">
-            <div className="flex flex-wrap gap-4">
-              <select value={filters.scent_family} onChange={(e) => setFilters(f => ({ ...f, scent_family: e.target.value }))}
-                data-testid="filter-scent-family"
-                className="px-4 py-2.5 bg-foreground/5 border border-border/30 text-sm focus:outline-none focus:border-amber-500">
-                <option value="">All Scent Families</option>
-                {categories.scent_families.map(s => <option key={s} value={s}>{s}</option>)}
-              </select>
-              <select value={filters.sort} onChange={(e) => setFilters(f => ({ ...f, sort: e.target.value }))}
-                data-testid="filter-sort"
-                className="px-4 py-2.5 bg-foreground/5 border border-border/30 text-sm focus:outline-none focus:border-amber-500">
-                <option value="newest">Newest</option>
-                <option value="price_low">Price: Low to High</option>
-                <option value="price_high">Price: High to Low</option>
-                <option value="rating">Top Rated</option>
-              </select>
-            </div>
-            <p className="text-sm text-muted-foreground">{products.length} products</p>
+        <div className="glass rounded-lg p-6 mb-12 flex flex-wrap gap-4 items-center justify-between">
+          <div className="flex flex-wrap gap-4">
+            <select value={filters.scent_family} onChange={(e) => setFilters(f => ({ ...f, scent_family: e.target.value }))}
+              className="px-4 py-2.5 bg-foreground/5 border border-border/30 text-sm focus:outline-none focus:border-amber-500">
+              <option value="">All Scent Families</option>
+              {categories.scent_families?.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+            <select value={filters.sort} onChange={(e) => setFilters(f => ({ ...f, sort: e.target.value }))}
+              className="px-4 py-2.5 bg-foreground/5 border border-border/30 text-sm focus:outline-none focus:border-amber-500">
+              <option value="newest">Newest</option>
+              <option value="price_low">Price: Low to High</option>
+              <option value="price_high">Price: High to Low</option>
+              <option value="rating">Top Rated</option>
+            </select>
           </div>
+          <p className="text-sm text-muted-foreground">{products.length} products</p>
         </div>
 
-        {/* Products */}
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[...Array(8)].map((_, i) => (
-              <div key={i} className="glass rounded-lg overflow-hidden">
-                <div className="aspect-[3/4] skeleton" />
-                <div className="p-5 space-y-3">
-                  <div className="h-3 w-16 skeleton rounded" />
-                  <div className="h-5 w-3/4 skeleton rounded" />
-                  <div className="h-3 w-full skeleton rounded" />
-                </div>
-              </div>
-            ))}
+            {[...Array(8)].map((_, i) => <div key={i} className="glass rounded-lg overflow-hidden"><div className="aspect-[3/4] skeleton" /><div className="p-5 space-y-3"><div className="h-3 w-16 skeleton rounded" /><div className="h-5 w-3/4 skeleton rounded" /></div></div>)}
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {products.map((product, i) => (
-              <motion.div key={product.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-                <ProductCard product={product} />
-              </motion.div>
-            ))}
+            {products.map((product, i) => <motion.div key={product.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}><ProductCard product={product} /></motion.div>)}
           </div>
         )}
       </div>
@@ -981,7 +712,7 @@ const ShopPage = () => {
   );
 };
 
-// ==================== PRODUCT DETAIL PAGE ====================
+// PRODUCT DETAIL PAGE
 const ProductDetailPage = () => {
   const { slug } = useParams();
   const [product, setProduct] = useState(null);
@@ -990,12 +721,7 @@ const ProductDetailPage = () => {
   const { addToCart, addToWishlist, isInWishlist, removeFromWishlist } = useCart();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    axios.get(`${API}/products/${slug}`)
-      .then(({ data }) => setProduct(data))
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, [slug]);
+  useEffect(() => { axios.get(`${API}/products/${slug}`).then(({ data }) => setProduct(data)).catch(() => {}).finally(() => setLoading(false)); }, [slug]);
 
   if (loading) return <div className="pt-32 pb-24 max-w-7xl mx-auto px-6"><div className="aspect-square skeleton rounded-lg max-w-md" /></div>;
   if (!product) return <div className="pt-32 pb-24 text-center"><h1 className="font-['Cormorant_Garamond'] text-3xl">Product Not Found</h1></div>;
@@ -1007,20 +733,14 @@ const ProductDetailPage = () => {
     <main data-testid="product-detail-page" className="pt-32 pb-24">
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         <div className="flex items-center gap-2 text-xs text-muted-foreground mb-8">
-          <Link to="/" className="hover:text-amber-500">Home</Link>
-          <ChevronRight size={12} />
-          <Link to="/shop" className="hover:text-amber-500">Shop</Link>
-          <ChevronRight size={12} />
-          <span className="text-foreground">{product.name}</span>
+          <Link to="/" className="hover:text-amber-500">Home</Link><ChevronRight size={12} /><Link to="/shop" className="hover:text-amber-500">Shop</Link><ChevronRight size={12} /><span className="text-foreground">{product.name}</span>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
-          {/* Image */}
           <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} className="aspect-square rounded-lg overflow-hidden glass">
             <img src={productImage} alt={product.name} className="w-full h-full object-cover" />
           </motion.div>
 
-          {/* Details */}
           <motion.div initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}>
             <div className="flex items-center gap-3 mb-4">
               <span className="px-3 py-1 border border-amber-500/30 text-amber-500 text-[10px] tracking-[0.1em] uppercase">{product.scent_family}</span>
@@ -1031,61 +751,35 @@ const ProductDetailPage = () => {
             <h1 className="font-['Cormorant_Garamond'] text-4xl lg:text-5xl mb-4">{product.name}</h1>
 
             <div className="flex items-center gap-4 mb-6">
-              <div className="flex items-center gap-1">
-                {[...Array(5)].map((_, i) => <Star key={i} size={14} className={i < Math.floor(product.rating) ? "fill-amber-500 text-amber-500" : "text-muted-foreground/30"} />)}
-              </div>
+              <div className="flex items-center gap-1">{[...Array(5)].map((_, i) => <Star key={i} size={14} className={i < Math.floor(product.rating) ? "fill-amber-500 text-amber-500" : "text-muted-foreground/30"} />)}</div>
               <span className="text-sm text-muted-foreground">{product.rating} ({product.reviews_count} reviews)</span>
             </div>
 
             <p className="text-muted-foreground leading-relaxed mb-8">{product.description}</p>
 
-            {/* Notes */}
             <div className="mb-8">
               <h3 className="text-[11px] tracking-[0.2em] uppercase text-muted-foreground mb-4">Fragrance Notes</h3>
-              <div className="flex flex-wrap gap-2">
-                {product.notes.map((note, i) => <span key={i} className="px-4 py-2 glass text-sm">{note}</span>)}
-              </div>
+              <div className="flex flex-wrap gap-2">{product.notes.map((note, i) => <span key={i} className="px-4 py-2 glass text-sm">{note}</span>)}</div>
             </div>
 
-            {/* Price */}
             <div className="flex items-baseline gap-4 mb-8">
               <span className="font-['Cormorant_Garamond'] text-4xl">₹{product.price.toFixed(0)}</span>
-              {product.original_price > product.price && (
-                <>
-                  <span className="text-lg text-muted-foreground line-through">₹{product.original_price.toFixed(0)}</span>
-                  <span className="px-2 py-1 bg-green-500/10 text-green-500 text-xs">Save {product.discount_percent}%</span>
-                </>
-              )}
+              {product.original_price > product.price && (<><span className="text-lg text-muted-foreground line-through">₹{product.original_price.toFixed(0)}</span><span className="px-2 py-1 bg-green-500/10 text-green-500 text-xs">Save {product.discount_percent}%</span></>)}
             </div>
 
-            {/* Size */}
-            <div className="mb-8">
-              <span className="text-[11px] tracking-[0.2em] uppercase text-muted-foreground">Size: </span>
-              <span className="text-sm">{product.size}</span>
-            </div>
+            <div className="mb-8"><span className="text-[11px] tracking-[0.2em] uppercase text-muted-foreground">Size: </span><span className="text-sm">{product.size}</span></div>
 
-            {/* Actions */}
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="flex items-center gap-4 glass px-4">
-                <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="p-2 hover:text-amber-500" data-testid="decrease-qty"><Minus size={18} /></button>
+                <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="p-2 hover:text-amber-500"><Minus size={18} /></button>
                 <span className="w-8 text-center">{quantity}</span>
-                <button onClick={() => setQuantity(quantity + 1)} className="p-2 hover:text-amber-500" data-testid="increase-qty"><Plus size={18} /></button>
+                <button onClick={() => setQuantity(quantity + 1)} className="p-2 hover:text-amber-500"><Plus size={18} /></button>
               </div>
-
-              <button onClick={() => addToCart(product.id, quantity)} data-testid="add-to-cart-btn"
-                className="flex-1 btn-luxury bg-amber-500 text-black glow-gold">
-                Add to Cart
-              </button>
-
-              <button onClick={() => inWishlist ? removeFromWishlist(product.id) : addToWishlist(product.id)}
-                data-testid="wishlist-btn" className={`p-4 glass ${inWishlist ? "text-red-400" : ""}`}>
-                <Heart size={20} fill={inWishlist ? "currentColor" : "none"} />
-              </button>
+              <button onClick={() => addToCart(product.id, quantity)} data-testid="add-to-cart-btn" className="flex-1 btn-luxury bg-amber-500 text-black glow-gold">Add to Cart</button>
+              <button onClick={() => inWishlist ? removeFromWishlist(product.id) : addToWishlist(product.id)} className={`p-4 glass ${inWishlist ? "text-red-400" : ""}`}><Heart size={20} fill={inWishlist ? "currentColor" : "none"} /></button>
             </div>
 
-            <p className={`mt-6 text-sm ${product.in_stock ? "text-green-500" : "text-red-400"}`}>
-              {product.in_stock ? "✓ In Stock" : "Out of Stock"}
-            </p>
+            <p className={`mt-6 text-sm ${product.in_stock ? "text-green-500" : "text-red-400"}`}>{product.in_stock ? "✓ In Stock" : "Out of Stock"}</p>
           </motion.div>
         </div>
       </div>
@@ -1093,7 +787,78 @@ const ProductDetailPage = () => {
   );
 };
 
-// ==================== CART PAGE ====================
+// PORTFOLIO PAGE
+const PortfolioPage = () => {
+  const [portfolio, setPortfolio] = useState([]);
+  const [brandStory, setBrandStory] = useState(null);
+  const [testimonials, setTestimonials] = useState([]);
+
+  useEffect(() => {
+    Promise.all([axios.get(`${API}/portfolio`), axios.get(`${API}/brand-story`), axios.get(`${API}/testimonials`)])
+      .then(([port, brand, test]) => { setPortfolio(port.data.clients); setBrandStory(brand.data); setTestimonials(test.data.testimonials); })
+      .catch(() => {});
+  }, []);
+
+  return (
+    <main data-testid="portfolio-page" className="pt-32 pb-24">
+      <div className="max-w-7xl mx-auto px-6 lg:px-8">
+        <div className="text-center mb-16">
+          <p className="text-[11px] tracking-[0.3em] text-amber-500 mb-3">OUR LEGACY</p>
+          <h1 className="font-['Cormorant_Garamond'] text-4xl lg:text-6xl mb-6">Portfolio & Clients</h1>
+          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">{brandStory?.mission}</p>
+        </div>
+
+        <StatsCounter stats={brandStory?.stats} />
+
+        {/* Clients Grid */}
+        <section className="py-16">
+          <h2 className="font-['Cormorant_Garamond'] text-3xl text-center mb-12">Trusted By India's Finest</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {portfolio.map((client, i) => (
+              <motion.div key={client.id} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}
+                className="glass-heavy p-8 rounded-lg card-premium">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-12 h-12 rounded-full bg-amber-500/20 flex items-center justify-center"><Building2 className="text-amber-500" /></div>
+                  <div>
+                    <h3 className="font-['Cormorant_Garamond'] text-xl">{client.name}</h3>
+                    <p className="text-xs text-amber-500">{client.category}</p>
+                  </div>
+                </div>
+                <p className="text-sm text-muted-foreground mb-4">{client.description}</p>
+                <p className="text-xs text-amber-500/60">{client.locations}+ locations served</p>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+
+        {/* Services for B2B */}
+        <section className="py-16 border-t border-border/20">
+          <h2 className="font-['Cormorant_Garamond'] text-3xl text-center mb-4">B2B Solutions</h2>
+          <p className="text-center text-muted-foreground mb-12 max-w-2xl mx-auto">Transform your commercial space with our professional scenting solutions.</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[
+              { title: "HVAC Scenting", desc: "Central diffusion systems for hotels, offices, and retail spaces", icon: <Building2 /> },
+              { title: "Corporate Gifting", desc: "Premium gift sets for employees, clients, and events", icon: <Gift /> },
+              { title: "Custom Fragrances", desc: "Develop your signature scent tailored to your brand", icon: <Sparkles /> }
+            ].map((s, i) => (
+              <motion.div key={i} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}
+                className="glass p-8 text-center rounded-lg">
+                <div className="w-14 h-14 mx-auto mb-6 rounded-full border border-amber-500/30 flex items-center justify-center text-amber-500">{s.icon}</div>
+                <h3 className="font-['Cormorant_Garamond'] text-2xl mb-3">{s.title}</h3>
+                <p className="text-sm text-muted-foreground mb-4">{s.desc}</p>
+                <Link to="/contact" className="text-amber-500 text-sm hover:underline">Get Quote →</Link>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+
+        <TestimonialsSection testimonials={testimonials} />
+      </div>
+    </main>
+  );
+};
+
+// CART PAGE
 const CartPage = () => {
   const { cart, updateCartItem, removeFromCart } = useCart();
   const { user } = useAuth();
@@ -1110,9 +875,7 @@ const CartPage = () => {
           <div className="lg:col-span-2 space-y-6">
             {cart.items.map((item) => (
               <div key={item.product_id} className="glass rounded-lg p-6 flex gap-6">
-                <div className="w-24 h-24 rounded-lg overflow-hidden flex-shrink-0">
-                  <img src={getProductImage(item.product_id)} alt={item.name} className="w-full h-full object-cover" />
-                </div>
+                <div className="w-24 h-24 rounded-lg overflow-hidden"><img src={getProductImage(item.product_id)} alt={item.name} className="w-full h-full object-cover" /></div>
                 <div className="flex-1">
                   <h3 className="font-['Cormorant_Garamond'] text-xl mb-1">{item.name}</h3>
                   <p className="text-xs text-muted-foreground mb-4">{item.size}</p>
@@ -1129,7 +892,6 @@ const CartPage = () => {
               </div>
             ))}
           </div>
-
           <div className="glass-heavy rounded-lg p-8 h-fit sticky top-32">
             <h2 className="font-['Cormorant_Garamond'] text-2xl mb-6">Order Summary</h2>
             <div className="space-y-4 mb-6">
@@ -1138,9 +900,7 @@ const CartPage = () => {
               <div className="divider-gold" />
               <div className="flex justify-between"><span className="font-['Cormorant_Garamond'] text-xl">Total</span><span className="font-['Cormorant_Garamond'] text-2xl">₹{cart.total.toFixed(0)}</span></div>
             </div>
-            <button onClick={() => navigate("/checkout")} data-testid="checkout-btn" className="w-full btn-luxury bg-amber-500 text-black glow-gold">
-              Checkout
-            </button>
+            <button onClick={() => navigate("/checkout")} data-testid="checkout-btn" className="w-full btn-luxury bg-amber-500 text-black glow-gold">Checkout</button>
           </div>
         </div>
       </div>
@@ -1148,7 +908,7 @@ const CartPage = () => {
   );
 };
 
-// ==================== OTHER PAGES (Simplified) ====================
+// OTHER PAGES (Checkout, Login, Dashboard, Wishlist, ScentFinder, About, Contact)
 const CheckoutPage = () => {
   const { cart, fetchCart } = useCart();
   const { user } = useAuth();
@@ -1160,11 +920,8 @@ const CheckoutPage = () => {
 
   const handleStripeCheckout = async () => {
     setLoading(true);
-    try {
-      const { data } = await axios.post(`${API}/checkout/stripe`, { items: cart.items.map(i => ({ product_id: i.product_id, quantity: i.quantity })), origin_url: window.location.origin });
-      window.location.href = data.url;
-    } catch { toast.error("Checkout failed"); }
-    finally { setLoading(false); }
+    try { const { data } = await axios.post(`${API}/checkout/stripe`, { items: cart.items.map(i => ({ product_id: i.product_id, quantity: i.quantity })), origin_url: window.location.origin }); window.location.href = data.url; }
+    catch { toast.error("Checkout failed"); } finally { setLoading(false); }
   };
 
   return (
@@ -1174,15 +931,11 @@ const CheckoutPage = () => {
         <div className="glass-heavy rounded-lg p-8">
           <h2 className="font-['Cormorant_Garamond'] text-2xl mb-6">Order Summary</h2>
           <div className="space-y-4 mb-6">
-            {cart.items.map(item => (
-              <div key={item.product_id} className="flex justify-between"><span>{item.name} x{item.quantity}</span><span>₹{(item.price * item.quantity).toFixed(0)}</span></div>
-            ))}
+            {cart.items.map(item => <div key={item.product_id} className="flex justify-between"><span>{item.name} x{item.quantity}</span><span>₹{(item.price * item.quantity).toFixed(0)}</span></div>)}
             <div className="divider-gold" />
             <div className="flex justify-between"><span className="font-['Cormorant_Garamond'] text-xl">Total</span><span className="font-['Cormorant_Garamond'] text-2xl">₹{cart.total.toFixed(0)}</span></div>
           </div>
-          <button onClick={handleStripeCheckout} disabled={loading} data-testid="pay-btn" className="w-full btn-luxury bg-amber-500 text-black glow-gold disabled:opacity-50">
-            {loading ? "Processing..." : `Pay ₹${cart.total.toFixed(0)}`}
-          </button>
+          <button onClick={handleStripeCheckout} disabled={loading} className="w-full btn-luxury bg-amber-500 text-black glow-gold disabled:opacity-50">{loading ? "Processing..." : `Pay ₹${cart.total.toFixed(0)}`}</button>
         </div>
       </div>
     </main>
@@ -1193,9 +946,7 @@ const CheckoutSuccessPage = () => {
   const navigate = useNavigate();
   return (
     <main data-testid="checkout-success-page" className="pt-32 pb-24 text-center">
-      <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="w-20 h-20 mx-auto mb-8 rounded-full bg-green-500/20 flex items-center justify-center">
-        <Check size={40} className="text-green-500" />
-      </motion.div>
+      <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="w-20 h-20 mx-auto mb-8 rounded-full bg-green-500/20 flex items-center justify-center"><Check size={40} className="text-green-500" /></motion.div>
       <h1 className="font-['Cormorant_Garamond'] text-4xl mb-4">Thank You!</h1>
       <p className="text-muted-foreground mb-8">Your order has been placed successfully.</p>
       <div className="flex gap-4 justify-center">
@@ -1216,14 +967,12 @@ const LoginPage = () => {
   useEffect(() => { if (user) navigate("/"); }, [user, navigate]);
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
+    e.preventDefault(); setLoading(true);
     try {
       if (isLogin) { await login(form.email, form.password); toast.success("Welcome back!"); }
       else { await register(form.name, form.email, form.password, form.phone); toast.success("Account created!"); }
       navigate("/");
-    } catch (err) { toast.error(err.response?.data?.detail || "Authentication failed"); }
-    finally { setLoading(false); }
+    } catch (err) { toast.error(err.response?.data?.detail || "Authentication failed"); } finally { setLoading(false); }
   };
 
   return (
@@ -1234,16 +983,11 @@ const LoginPage = () => {
           <p className="text-muted-foreground">{isLogin ? "Sign in to continue" : "Join Fleur Fragrances"}</p>
         </div>
         <form onSubmit={handleSubmit} className="glass-heavy rounded-lg p-8 space-y-6">
-          {!isLogin && <input type="text" placeholder="Full Name" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} data-testid="register-name" className="w-full px-4 py-3 bg-foreground/5 border border-border/30 text-sm focus:outline-none focus:border-amber-500" required />}
-          <input type="email" placeholder="Email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} data-testid="login-email" className="w-full px-4 py-3 bg-foreground/5 border border-border/30 text-sm focus:outline-none focus:border-amber-500" required />
-          <input type="password" placeholder="Password" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} data-testid="login-password" className="w-full px-4 py-3 bg-foreground/5 border border-border/30 text-sm focus:outline-none focus:border-amber-500" required />
-          <button type="submit" disabled={loading} data-testid="auth-submit-btn" className="w-full btn-luxury bg-amber-500 text-black glow-gold disabled:opacity-50">
-            {loading ? "Please wait..." : (isLogin ? "Sign In" : "Create Account")}
-          </button>
-          <p className="text-center text-sm text-muted-foreground">
-            {isLogin ? "Don't have an account?" : "Already have an account?"}{" "}
-            <button type="button" onClick={() => setIsLogin(!isLogin)} className="text-amber-500 hover:underline">{isLogin ? "Sign Up" : "Sign In"}</button>
-          </p>
+          {!isLogin && <input type="text" placeholder="Full Name" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className="w-full px-4 py-3 bg-foreground/5 border border-border/30 text-sm focus:outline-none focus:border-amber-500" required />}
+          <input type="email" placeholder="Email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} className="w-full px-4 py-3 bg-foreground/5 border border-border/30 text-sm focus:outline-none focus:border-amber-500" required />
+          <input type="password" placeholder="Password" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} className="w-full px-4 py-3 bg-foreground/5 border border-border/30 text-sm focus:outline-none focus:border-amber-500" required />
+          <button type="submit" disabled={loading} className="w-full btn-luxury bg-amber-500 text-black glow-gold disabled:opacity-50">{loading ? "Please wait..." : (isLogin ? "Sign In" : "Create Account")}</button>
+          <p className="text-center text-sm text-muted-foreground">{isLogin ? "Don't have an account?" : "Already have an account?"}{" "}<button type="button" onClick={() => setIsLogin(!isLogin)} className="text-amber-500 hover:underline">{isLogin ? "Sign Up" : "Sign In"}</button></p>
         </form>
       </div>
     </main>
@@ -1256,58 +1000,23 @@ const DashboardPage = () => {
   const navigate = useNavigate();
 
   useEffect(() => { if (!user) navigate("/login"); else axios.get(`${API}/orders`).then(({ data }) => setOrders(data)); }, [user, navigate]);
-
   if (!user) return null;
 
   return (
     <main data-testid="dashboard-page" className="pt-32 pb-24">
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         <div className="flex items-center justify-between mb-12">
-          <div>
-            <h1 className="font-['Cormorant_Garamond'] text-4xl mb-2">My Dashboard</h1>
-            <p className="text-muted-foreground">Welcome, {user.name}</p>
-          </div>
+          <div><h1 className="font-['Cormorant_Garamond'] text-4xl mb-2">My Dashboard</h1><p className="text-muted-foreground">Welcome, {user.name}</p></div>
           <button onClick={logout} className="text-sm text-muted-foreground hover:text-red-400">Logout</button>
         </div>
-
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
-          <div className="glass rounded-lg p-6">
-            <h3 className="font-['Cormorant_Garamond'] text-xl mb-4">Profile</h3>
-            <p className="text-sm text-muted-foreground mb-1">Name: <span className="text-foreground">{user.name}</span></p>
-            <p className="text-sm text-muted-foreground">Email: <span className="text-foreground">{user.email}</span></p>
-          </div>
-          <div className="glass rounded-lg p-6">
-            <h3 className="font-['Cormorant_Garamond'] text-xl mb-4">Quick Links</h3>
-            <Link to="/wishlist" className="block py-2 text-sm hover:text-amber-500">My Wishlist</Link>
-            <Link to="/shop" className="block py-2 text-sm hover:text-amber-500">Continue Shopping</Link>
-          </div>
-          <div className="glass rounded-lg p-6">
-            <h3 className="font-['Cormorant_Garamond'] text-xl mb-4">Overview</h3>
-            <p className="text-3xl font-['Cormorant_Garamond']">{orders.length}</p>
-            <p className="text-xs text-muted-foreground">Total Orders</p>
-          </div>
+          <div className="glass rounded-lg p-6"><h3 className="font-['Cormorant_Garamond'] text-xl mb-4">Profile</h3><p className="text-sm text-muted-foreground mb-1">Name: <span className="text-foreground">{user.name}</span></p><p className="text-sm text-muted-foreground">Email: <span className="text-foreground">{user.email}</span></p></div>
+          <div className="glass rounded-lg p-6"><h3 className="font-['Cormorant_Garamond'] text-xl mb-4">Quick Links</h3><Link to="/wishlist" className="block py-2 text-sm hover:text-amber-500">My Wishlist</Link><Link to="/shop" className="block py-2 text-sm hover:text-amber-500">Continue Shopping</Link></div>
+          <div className="glass rounded-lg p-6"><h3 className="font-['Cormorant_Garamond'] text-xl mb-4">Overview</h3><p className="text-3xl font-['Cormorant_Garamond']">{orders.length}</p><p className="text-xs text-muted-foreground">Total Orders</p></div>
         </div>
-
         <h2 className="font-['Cormorant_Garamond'] text-2xl mb-6">Order History</h2>
-        {orders.length === 0 ? (
-          <div className="glass rounded-lg p-12 text-center">
-            <p className="text-muted-foreground">No orders yet</p>
-            <button onClick={() => navigate("/shop")} className="mt-4 btn-luxury bg-amber-500 text-black">Start Shopping</button>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {orders.map(order => (
-              <div key={order.id} className="glass rounded-lg p-6">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <p className="text-xs text-muted-foreground">Order #{order.id.slice(0, 8)}</p>
-                    <p className="font-['Cormorant_Garamond'] text-xl">₹{order.total_amount.toFixed(0)}</p>
-                  </div>
-                  <span className="px-3 py-1 bg-green-500/20 text-green-500 text-xs">{order.order_status}</span>
-                </div>
-              </div>
-            ))}
-          </div>
+        {orders.length === 0 ? <div className="glass rounded-lg p-12 text-center"><p className="text-muted-foreground">No orders yet</p><button onClick={() => navigate("/shop")} className="mt-4 btn-luxury bg-amber-500 text-black">Start Shopping</button></div> : (
+          <div className="space-y-4">{orders.map(order => <div key={order.id} className="glass rounded-lg p-6"><div className="flex justify-between items-center"><div><p className="text-xs text-muted-foreground">Order #{order.id.slice(0, 8)}</p><p className="font-['Cormorant_Garamond'] text-xl">₹{order.total_amount.toFixed(0)}</p></div><span className="px-3 py-1 bg-green-500/20 text-green-500 text-xs">{order.order_status}</span></div></div>)}</div>
         )}
       </div>
     </main>
@@ -1326,9 +1035,7 @@ const WishlistPage = () => {
     <main data-testid="wishlist-page" className="pt-32 pb-24">
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         <h1 className="font-['Cormorant_Garamond'] text-4xl lg:text-5xl mb-12">My Wishlist</h1>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {wishlist.map(product => <ProductCard key={product.id} product={product} />)}
-        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">{wishlist.map(product => <ProductCard key={product.id} product={product} />)}</div>
       </div>
     </main>
   );
@@ -1357,11 +1064,8 @@ const ScentFinderPage = () => {
 
   const getResults = async (finalAnswers) => {
     setLoading(true);
-    try {
-      const { data } = await axios.post(`${API}/ai/scent-finder`, { answers: finalAnswers });
-      setResults(data.recommendations);
-    } catch { console.error("Failed"); }
-    finally { setLoading(false); }
+    try { const { data } = await axios.post(`${API}/ai/scent-finder`, { answers: finalAnswers }); setResults(data.recommendations); }
+    catch {} finally { setLoading(false); }
   };
 
   return (
@@ -1370,48 +1074,26 @@ const ScentFinderPage = () => {
         <AnimatePresence mode="wait">
           {!results ? (
             <motion.div key={step} initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }} className="text-center">
-              <div className="flex justify-center gap-2 mb-8">
-                {questions.map((_, i) => <div key={i} className={`w-3 h-3 rounded-full ${i <= step ? "bg-amber-500" : "bg-foreground/10"}`} />)}
-              </div>
+              <div className="flex justify-center gap-2 mb-8">{questions.map((_, i) => <div key={i} className={`w-3 h-3 rounded-full ${i <= step ? "bg-amber-500" : "bg-foreground/10"}`} />)}</div>
               <p className="text-[11px] tracking-[0.3em] text-amber-500 mb-4">QUESTION {step + 1} OF {questions.length}</p>
               <h1 className="font-['Cormorant_Garamond'] text-3xl lg:text-4xl mb-12">{questions[step].question}</h1>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {questions[step].options.map((option, i) => (
-                  <motion.button key={option} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
-                    onClick={() => handleAnswer(option)} data-testid={`scent-option-${i}`}
-                    className="glass p-6 text-left hover:border-amber-500 transition-all">
-                    {option}
-                  </motion.button>
+                  <motion.button key={option} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} onClick={() => handleAnswer(option)} className="glass p-6 text-left hover:border-amber-500 transition-all">{option}</motion.button>
                 ))}
               </div>
             </motion.div>
           ) : loading ? (
-            <div className="text-center">
-              <div className="w-12 h-12 mx-auto mb-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
-              <p className="font-['Cormorant_Garamond'] text-xl">Finding your perfect scents...</p>
-            </div>
+            <div className="text-center"><div className="w-12 h-12 mx-auto mb-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" /><p className="font-['Cormorant_Garamond'] text-xl">Finding your perfect scents...</p></div>
           ) : (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-              <div className="text-center mb-12">
-                <Sparkles size={40} className="mx-auto text-amber-500 mb-4" />
-                <h1 className="font-['Cormorant_Garamond'] text-3xl lg:text-4xl mb-4">Your Perfect Matches</h1>
-              </div>
-              <div className="space-y-6">
-                {results?.map((rec, i) => (
-                  <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.2 }}
-                    className="glass-heavy rounded-lg p-6 flex items-center gap-6">
-                    <div className="w-12 h-12 rounded-full bg-amber-500/20 flex items-center justify-center font-['Cormorant_Garamond'] text-xl text-amber-500">#{i + 1}</div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="font-['Cormorant_Garamond'] text-xl">{rec.name}</h3>
-                        <span className="px-2 py-1 bg-amber-500/20 text-amber-500 text-xs">{rec.match_score}% Match</span>
-                      </div>
-                      <p className="text-sm text-muted-foreground">{rec.reason}</p>
-                      <p className="font-['Cormorant_Garamond'] text-lg mt-2">₹{rec.price}</p>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
+              <div className="text-center mb-12"><Sparkles size={40} className="mx-auto text-amber-500 mb-4" /><h1 className="font-['Cormorant_Garamond'] text-3xl lg:text-4xl mb-4">Your Perfect Matches</h1></div>
+              <div className="space-y-6">{results?.map((rec, i) => (
+                <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.2 }} className="glass-heavy rounded-lg p-6 flex items-center gap-6">
+                  <div className="w-12 h-12 rounded-full bg-amber-500/20 flex items-center justify-center font-['Cormorant_Garamond'] text-xl text-amber-500">#{i + 1}</div>
+                  <div className="flex-1"><div className="flex items-center gap-3 mb-2"><h3 className="font-['Cormorant_Garamond'] text-xl">{rec.name}</h3><span className="px-2 py-1 bg-amber-500/20 text-amber-500 text-xs">{rec.match_score}% Match</span></div><p className="text-sm text-muted-foreground">{rec.reason}</p><p className="font-['Cormorant_Garamond'] text-lg mt-2">₹{rec.price}</p></div>
+                </motion.div>
+              ))}</div>
               <div className="text-center mt-12 space-x-4">
                 <button onClick={() => { setStep(0); setAnswers([]); setResults(null); }} className="btn-luxury border border-foreground/20">Retake Quiz</button>
                 <button onClick={() => navigate("/shop")} className="btn-luxury bg-amber-500 text-black">Browse All</button>
@@ -1424,36 +1106,56 @@ const ScentFinderPage = () => {
   );
 };
 
-const AboutPage = () => (
-  <main data-testid="about-page" className="pt-32 pb-24">
-    <div className="max-w-7xl mx-auto px-6 lg:px-8">
-      <div className="text-center mb-16">
-        <p className="text-[11px] tracking-[0.3em] text-amber-500 mb-3">OUR STORY</p>
-        <h1 className="font-['Cormorant_Garamond'] text-4xl lg:text-6xl mb-6">Spreading Aroma Since 2015</h1>
-        <p className="text-muted-foreground text-lg max-w-2xl mx-auto">Fleur Fragrances is a passion project born to bring premium international scents to India.</p>
-      </div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-        <img src="https://images.unsplash.com/photo-1671493233978-364fd0e59c93?w=800&q=80" alt="About" className="rounded-lg" />
-        <div>
-          <h2 className="font-['Cormorant_Garamond'] text-3xl mb-6">The Power of Scent</h2>
-          <p className="text-muted-foreground mb-6">Founded in Mumbai, our brand dedicates to crafting exquisite aroma oils that evoke emotions and transform spaces.</p>
-          <p className="text-muted-foreground">With keen attention to quality and commitment to excellence, we source the finest ingredients globally.</p>
+const AboutPage = () => {
+  const [brandStory, setBrandStory] = useState(null);
+  useEffect(() => { axios.get(`${API}/brand-story`).then(({ data }) => setBrandStory(data)); }, []);
+
+  return (
+    <main data-testid="about-page" className="pt-32 pb-24">
+      <div className="max-w-7xl mx-auto px-6 lg:px-8">
+        <div className="text-center mb-16">
+          <p className="text-[11px] tracking-[0.3em] text-amber-500 mb-3">OUR STORY</p>
+          <h1 className="font-['Cormorant_Garamond'] text-4xl lg:text-6xl mb-6">{brandStory?.tagline || "Luxury Heritage Fragrance for Modern India"}</h1>
+          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">{brandStory?.mission}</p>
         </div>
+
+        <StatsCounter stats={brandStory?.stats} />
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center my-24">
+          <img src="https://images.pexels.com/photos/3685530/pexels-photo-3685530.jpeg?auto=compress&cs=tinysrgb&w=800" alt="About" className="rounded-lg" />
+          <div>
+            <h2 className="font-['Cormorant_Garamond'] text-3xl mb-6">The Fleur Story</h2>
+            <p className="text-muted-foreground leading-relaxed mb-6">{brandStory?.story}</p>
+            <Link to="/portfolio" className="text-amber-500 hover:underline flex items-center gap-2">View Our Portfolio <ArrowRight size={16} /></Link>
+          </div>
+        </div>
+
+        {brandStory?.values && (
+          <section className="py-16 border-t border-border/20">
+            <h2 className="font-['Cormorant_Garamond'] text-3xl text-center mb-12">Our Values</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+              {brandStory.values.map((v, i) => (
+                <motion.div key={i} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }} className="glass rounded-lg p-8 text-center">
+                  <h3 className="font-['Cormorant_Garamond'] text-2xl mb-3 text-amber-500">{v.title}</h3>
+                  <p className="text-sm text-muted-foreground">{v.description}</p>
+                </motion.div>
+              ))}
+            </div>
+          </section>
+        )}
       </div>
-    </div>
-  </main>
-);
+    </main>
+  );
+};
 
 const ContactPage = () => {
   const [form, setForm] = useState({ name: "", email: "", subject: "", message: "" });
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
+    e.preventDefault(); setLoading(true);
     try { await axios.post(`${API}/contact`, null, { params: form }); toast.success("Message sent!"); setForm({ name: "", email: "", subject: "", message: "" }); }
-    catch { toast.error("Failed to send"); }
-    finally { setLoading(false); }
+    catch { toast.error("Failed to send"); } finally { setLoading(false); }
   };
 
   return (
@@ -1466,25 +1168,30 @@ const ContactPage = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
           <div>
             <h2 className="font-['Cormorant_Garamond'] text-2xl mb-6">Let's Connect</h2>
-            <div className="space-y-4">
-              <div className="flex items-center gap-3"><MapPin className="text-amber-500" /><span>Mumbai, India</span></div>
+            <p className="text-muted-foreground mb-8">Whether you're looking for home fragrances or corporate scenting solutions, we'd love to hear from you.</p>
+            <div className="space-y-6">
+              <div className="flex items-center gap-3"><MapPin className="text-amber-500" /><span>Mumbai, Maharashtra, India</span></div>
               <div className="flex items-center gap-3"><Phone className="text-amber-500" /><span>+91 98765 43210</span></div>
               <div className="flex items-center gap-3"><Mail className="text-amber-500" /><span>hello@fleurfragrances.com</span></div>
             </div>
+            <div className="mt-12 p-6 glass rounded-lg">
+              <h3 className="font-['Cormorant_Garamond'] text-xl mb-3">B2B Inquiries</h3>
+              <p className="text-sm text-muted-foreground mb-4">For hotels, corporate offices, and commercial spaces.</p>
+              <a href="mailto:b2b@fleurfragrances.com" className="text-amber-500 hover:underline">b2b@fleurfragrances.com</a>
+            </div>
           </div>
           <form onSubmit={handleSubmit} className="glass-heavy rounded-lg p-8 space-y-6">
-            <input type="text" placeholder="Name" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} data-testid="contact-name" className="w-full px-4 py-3 bg-foreground/5 border border-border/30 text-sm focus:outline-none focus:border-amber-500" required />
-            <input type="email" placeholder="Email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} data-testid="contact-email" className="w-full px-4 py-3 bg-foreground/5 border border-border/30 text-sm focus:outline-none focus:border-amber-500" required />
-            <select value={form.subject} onChange={e => setForm(f => ({ ...f, subject: e.target.value }))} data-testid="contact-subject" className="w-full px-4 py-3 bg-foreground/5 border border-border/30 text-sm focus:outline-none focus:border-amber-500" required>
+            <input type="text" placeholder="Name" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className="w-full px-4 py-3 bg-foreground/5 border border-border/30 text-sm focus:outline-none focus:border-amber-500" required />
+            <input type="email" placeholder="Email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} className="w-full px-4 py-3 bg-foreground/5 border border-border/30 text-sm focus:outline-none focus:border-amber-500" required />
+            <select value={form.subject} onChange={e => setForm(f => ({ ...f, subject: e.target.value }))} className="w-full px-4 py-3 bg-foreground/5 border border-border/30 text-sm focus:outline-none focus:border-amber-500" required>
               <option value="">Select Subject</option>
               <option value="General">General Inquiry</option>
               <option value="Product">Product Question</option>
-              <option value="B2B">B2B Inquiry</option>
+              <option value="B2B">B2B / Corporate</option>
+              <option value="Corporate Gifting">Corporate Gifting</option>
             </select>
-            <textarea placeholder="Message" value={form.message} onChange={e => setForm(f => ({ ...f, message: e.target.value }))} data-testid="contact-message" rows={5} className="w-full px-4 py-3 bg-foreground/5 border border-border/30 text-sm focus:outline-none focus:border-amber-500 resize-none" required />
-            <button type="submit" disabled={loading} data-testid="contact-submit" className="w-full btn-luxury bg-amber-500 text-black glow-gold disabled:opacity-50">
-              {loading ? "Sending..." : "Send Message"}
-            </button>
+            <textarea placeholder="Message" value={form.message} onChange={e => setForm(f => ({ ...f, message: e.target.value }))} rows={5} className="w-full px-4 py-3 bg-foreground/5 border border-border/30 text-sm focus:outline-none focus:border-amber-500 resize-none" required />
+            <button type="submit" disabled={loading} className="w-full btn-luxury bg-amber-500 text-black glow-gold disabled:opacity-50">{loading ? "Sending..." : "Send Message"}</button>
           </form>
         </div>
       </div>
@@ -1492,33 +1199,7 @@ const ContactPage = () => {
   );
 };
 
-const ServicesPage = () => (
-  <main data-testid="services-page" className="pt-32 pb-24">
-    <div className="max-w-7xl mx-auto px-6 lg:px-8">
-      <div className="text-center mb-16">
-        <p className="text-[11px] tracking-[0.3em] text-amber-500 mb-3">B2B SOLUTIONS</p>
-        <h1 className="font-['Cormorant_Garamond'] text-4xl lg:text-5xl mb-4">Our Services</h1>
-        <p className="text-muted-foreground max-w-2xl mx-auto">Professional scenting solutions for hotels, offices, and commercial spaces.</p>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {[
-          { title: "HVAC Aroma Diffusion", desc: "Central HVAC-linked scenting for large environments" },
-          { title: "Portable Aroma Machines", desc: "Stand-alone diffusers for smaller spaces" },
-          { title: "Premium Bulk Oils", desc: "High-quality fragrance oils in larger volumes" },
-          { title: "Custom Scent Development", desc: "Create your signature fragrance" }
-        ].map((s, i) => (
-          <div key={i} className="glass rounded-lg p-8 card-premium">
-            <h3 className="font-['Cormorant_Garamond'] text-2xl mb-3">{s.title}</h3>
-            <p className="text-muted-foreground mb-4">{s.desc}</p>
-            <Link to="/contact" className="text-amber-500 hover:underline flex items-center gap-2 text-sm">Request Quote <ArrowUpRight size={14} /></Link>
-          </div>
-        ))}
-      </div>
-    </div>
-  </main>
-);
-
-// ==================== APP ====================
+// APP
 function App() {
   return (
     <ThemeProvider>
@@ -1538,9 +1219,9 @@ function App() {
                 <Route path="/dashboard" element={<DashboardPage />} />
                 <Route path="/wishlist" element={<WishlistPage />} />
                 <Route path="/scent-finder" element={<ScentFinderPage />} />
+                <Route path="/portfolio" element={<PortfolioPage />} />
                 <Route path="/about" element={<AboutPage />} />
                 <Route path="/contact" element={<ContactPage />} />
-                <Route path="/services" element={<ServicesPage />} />
               </Routes>
               <Footer />
               <ChatWidget />
