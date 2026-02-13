@@ -1510,6 +1510,8 @@ function App() {
                 <Route path="/portfolio" element={<PortfolioPage />} />
                 <Route path="/about" element={<AboutPage />} />
                 <Route path="/contact" element={<ContactPage />} />
+                <Route path="/corporate-gifting" element={<CorporateGiftingPage />} />
+                <Route path="/sustainability" element={<SustainabilityPage />} />
               </Routes>
               <Footer />
               <ChatWidget />
