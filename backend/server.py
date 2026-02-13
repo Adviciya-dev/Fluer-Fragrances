@@ -310,6 +310,125 @@ BRAND_STORY = {
     }
 }
 
+# ==================== CORPORATE GIFTING DATA ====================
+
+CORPORATE_GIFTING_PACKAGES = [
+    {
+        "id": "gift_starter",
+        "name": "Starter Collection",
+        "tier": "Bronze",
+        "description": "Perfect for small teams and departments. A curated selection of our bestselling fragrances.",
+        "price_range": "₹15,000 - ₹25,000",
+        "min_quantity": 10,
+        "includes": [
+            "Selection of 3 premium fragrances (100ml each)",
+            "Custom gift boxes with your branding",
+            "Personalized message cards",
+            "Free delivery within India"
+        ],
+        "best_for": "Employee appreciation, Festive gifting, Team rewards",
+        "image": "https://images.unsplash.com/photo-1549465220-1a8b9238cd48?w=800&q=80"
+    },
+    {
+        "id": "gift_premium",
+        "name": "Premium Executive",
+        "tier": "Silver",
+        "description": "Elevate your corporate gifting with our signature luxury collection. Ideal for clients and senior management.",
+        "price_range": "₹35,000 - ₹50,000",
+        "min_quantity": 20,
+        "includes": [
+            "Selection of 5 luxury fragrances (100ml each)",
+            "Premium wooden gift boxes",
+            "Elegant silk ribbons and tissue",
+            "Engraved brass name plates",
+            "White-glove delivery service"
+        ],
+        "best_for": "Client appreciation, Executive gifts, Board members",
+        "image": "https://images.unsplash.com/photo-1513201099705-a9746e1e201f?w=800&q=80"
+    },
+    {
+        "id": "gift_luxe",
+        "name": "Luxe Signature",
+        "tier": "Gold",
+        "description": "The ultimate corporate gifting experience. Bespoke fragrances and white-glove service for the most discerning recipients.",
+        "price_range": "₹75,000 - ₹1,50,000",
+        "min_quantity": 25,
+        "includes": [
+            "Full collection of 8 signature fragrances",
+            "Handcrafted leather gift cases",
+            "Custom fragrance blending option",
+            "Personal fragrance consultation",
+            "Dedicated account manager",
+            "Priority delivery with tracking"
+        ],
+        "best_for": "VIP clients, C-Suite executives, Major partnerships",
+        "image": "https://images.unsplash.com/photo-1607083206869-4c7672e72a8a?w=800&q=80"
+    },
+    {
+        "id": "gift_custom",
+        "name": "Bespoke Enterprise",
+        "tier": "Platinum",
+        "description": "Completely customized gifting solutions for large enterprises. Create a unique olfactory identity for your brand.",
+        "price_range": "Custom pricing",
+        "min_quantity": 100,
+        "includes": [
+            "Custom fragrance development",
+            "Exclusive private label options",
+            "Complete branding integration",
+            "Luxury packaging design",
+            "Global shipping coordination",
+            "24/7 dedicated support",
+            "Event integration services"
+        ],
+        "best_for": "Large enterprises, Multi-national gifting, Brand partnerships",
+        "image": "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=800&q=80"
+    }
+]
+
+GIFTING_BENEFITS = [
+    {"icon": "gift", "title": "Luxury Presentation", "description": "Premium packaging that reflects your brand's prestige"},
+    {"icon": "users", "title": "Bulk Discounts", "description": "Significant savings on orders of 50+ units"},
+    {"icon": "palette", "title": "Full Customization", "description": "Custom branding, messaging, and packaging"},
+    {"icon": "truck", "title": "Pan-India Delivery", "description": "Free shipping across India with tracking"},
+    {"icon": "award", "title": "Quality Guarantee", "description": "Same premium quality trusted by luxury hotels"},
+    {"icon": "headphones", "title": "Dedicated Support", "description": "Personal account manager for large orders"}
+]
+
+@api_router.get("/corporate-gifting")
+async def get_corporate_gifting():
+    return {
+        "packages": CORPORATE_GIFTING_PACKAGES,
+        "benefits": GIFTING_BENEFITS
+    }
+
+class GiftingInquiry(BaseModel):
+    company_name: str
+    contact_name: str
+    email: EmailStr
+    phone: str
+    package_interest: str
+    quantity: int
+    occasion: Optional[str] = None
+    message: Optional[str] = None
+
+@api_router.post("/corporate-gifting/inquiry")
+async def submit_gifting_inquiry(inquiry: GiftingInquiry):
+    inquiry_doc = {
+        "id": str(uuid.uuid4()),
+        "company_name": inquiry.company_name,
+        "contact_name": inquiry.contact_name,
+        "email": inquiry.email,
+        "phone": inquiry.phone,
+        "package_interest": inquiry.package_interest,
+        "quantity": inquiry.quantity,
+        "occasion": inquiry.occasion,
+        "message": inquiry.message,
+        "status": "new",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.gifting_inquiries.insert_one(inquiry_doc)
+    return {"message": "Thank you for your inquiry! Our corporate gifting team will contact you within 24 hours.", "inquiry_id": inquiry_doc["id"]}
+
 @api_router.get("/portfolio")
 async def get_portfolio():
     return {"clients": PORTFOLIO_DATA}
