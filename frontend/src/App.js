@@ -1247,6 +1247,244 @@ const ContactPage = () => {
       </div>
     </main>
   );
+}};
+
+// CORPORATE GIFTING PAGE
+const CorporateGiftingPage = () => {
+  const [giftingData, setGiftingData] = useState({ packages: [], benefits: [] });
+  const [selectedPackage, setSelectedPackage] = useState(null);
+  const [form, setForm] = useState({ company_name: "", contact_name: "", email: "", phone: "", package_interest: "", quantity: 10, occasion: "", message: "" });
+  const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+
+  useEffect(() => {
+    axios.get(`${API}/corporate-gifting`).then(({ data }) => setGiftingData(data)).catch(() => {});
+  }, []);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      await axios.post(`${API}/corporate-gifting/inquiry`, form);
+      toast.success("Thank you! Our team will contact you within 24 hours.");
+      setSubmitted(true);
+    } catch {
+      toast.error("Failed to submit inquiry");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const tierColors = {
+    Bronze: "from-amber-700 to-amber-900",
+    Silver: "from-slate-400 to-slate-600",
+    Gold: "from-amber-400 to-amber-600",
+    Platinum: "from-slate-200 to-slate-400"
+  };
+
+  return (
+    <main data-testid="corporate-gifting-page" className="pt-32 pb-24">
+      <div className="max-w-7xl mx-auto px-6 lg:px-8">
+        {/* Hero */}
+        <div className="text-center mb-20">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+            <p className="text-[11px] tracking-[0.3em] text-amber-500 mb-3">CORPORATE GIFTING</p>
+            <h1 className="font-['Cormorant_Garamond'] text-4xl lg:text-6xl mb-6">Elevate Your Corporate Gifting</h1>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">Make a lasting impression with premium fragrance gifts. The same luxury trusted by India's finest hotels — now for your corporate relationships.</p>
+          </motion.div>
+        </div>
+
+        {/* Benefits */}
+        <section className="mb-20">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            {giftingData.benefits.map((benefit, i) => (
+              <motion.div key={i} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}
+                className="glass p-5 text-center rounded-lg">
+                <div className="w-10 h-10 mx-auto mb-3 rounded-full border border-amber-500/30 flex items-center justify-center text-amber-500">
+                  {benefit.icon === "gift" && <Gift size={18} />}
+                  {benefit.icon === "users" && <Users size={18} />}
+                  {benefit.icon === "palette" && <Sparkles size={18} />}
+                  {benefit.icon === "truck" && <Truck size={18} />}
+                  {benefit.icon === "award" && <Award size={18} />}
+                  {benefit.icon === "headphones" && <MessageCircle size={18} />}
+                </div>
+                <h4 className="font-['Cormorant_Garamond'] text-sm mb-1">{benefit.title}</h4>
+                <p className="text-[10px] text-muted-foreground">{benefit.description}</p>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+
+        {/* Packages */}
+        <section className="mb-20">
+          <h2 className="font-['Cormorant_Garamond'] text-3xl text-center mb-12">Gifting Packages</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {giftingData.packages.map((pkg, i) => (
+              <motion.div key={pkg.id} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}
+                onClick={() => { setSelectedPackage(pkg); setForm(f => ({ ...f, package_interest: pkg.name })); }}
+                className={`glass-heavy rounded-lg overflow-hidden cursor-pointer card-premium ${selectedPackage?.id === pkg.id ? "ring-2 ring-amber-500" : ""}`}>
+                <div className={`h-2 bg-gradient-to-r ${tierColors[pkg.tier]}`} />
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-[10px] tracking-[0.15em] uppercase text-muted-foreground">{pkg.tier}</span>
+                    <span className="text-xs text-amber-500">Min {pkg.min_quantity} units</span>
+                  </div>
+                  <h3 className="font-['Cormorant_Garamond'] text-2xl mb-2">{pkg.name}</h3>
+                  <p className="text-amber-500 font-['Cormorant_Garamond'] text-xl mb-4">{pkg.price_range}</p>
+                  <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{pkg.description}</p>
+                  <ul className="space-y-2 mb-6">
+                    {pkg.includes.slice(0, 4).map((item, j) => (
+                      <li key={j} className="flex items-start gap-2 text-xs text-muted-foreground">
+                        <Check size={12} className="text-amber-500 mt-0.5 flex-shrink-0" />{item}
+                      </li>
+                    ))}
+                    {pkg.includes.length > 4 && <li className="text-xs text-amber-500">+{pkg.includes.length - 4} more</li>}
+                  </ul>
+                  <p className="text-[10px] text-muted-foreground">Best for: {pkg.best_for}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+
+        {/* Inquiry Form */}
+        <section className="max-w-2xl mx-auto">
+          <div className="text-center mb-8">
+            <h2 className="font-['Cormorant_Garamond'] text-3xl mb-4">Request a Quote</h2>
+            <p className="text-muted-foreground">Fill out the form below and our corporate gifting specialist will contact you within 24 hours.</p>
+          </div>
+
+          {submitted ? (
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="glass-heavy rounded-lg p-12 text-center">
+              <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-green-500/20 flex items-center justify-center"><Check size={32} className="text-green-500" /></div>
+              <h3 className="font-['Cormorant_Garamond'] text-2xl mb-2">Inquiry Received!</h3>
+              <p className="text-muted-foreground mb-6">Our corporate gifting team will reach out within 24 hours.</p>
+              <button onClick={() => setSubmitted(false)} className="btn-luxury border border-foreground/20">Submit Another Inquiry</button>
+            </motion.div>
+          ) : (
+            <form onSubmit={handleSubmit} className="glass-heavy rounded-lg p-8 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <input type="text" placeholder="Company Name *" value={form.company_name} onChange={e => setForm(f => ({ ...f, company_name: e.target.value }))} className="w-full px-4 py-3 bg-foreground/5 border border-border/30 text-sm focus:outline-none focus:border-amber-500" required />
+                <input type="text" placeholder="Contact Person *" value={form.contact_name} onChange={e => setForm(f => ({ ...f, contact_name: e.target.value }))} className="w-full px-4 py-3 bg-foreground/5 border border-border/30 text-sm focus:outline-none focus:border-amber-500" required />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <input type="email" placeholder="Email *" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} className="w-full px-4 py-3 bg-foreground/5 border border-border/30 text-sm focus:outline-none focus:border-amber-500" required />
+                <input type="tel" placeholder="Phone *" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} className="w-full px-4 py-3 bg-foreground/5 border border-border/30 text-sm focus:outline-none focus:border-amber-500" required />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <select value={form.package_interest} onChange={e => setForm(f => ({ ...f, package_interest: e.target.value }))} className="w-full px-4 py-3 bg-foreground/5 border border-border/30 text-sm focus:outline-none focus:border-amber-500" required>
+                  <option value="">Select Package Interest *</option>
+                  {giftingData.packages.map(pkg => <option key={pkg.id} value={pkg.name}>{pkg.name} ({pkg.tier})</option>)}
+                </select>
+                <input type="number" placeholder="Estimated Quantity *" min="10" value={form.quantity} onChange={e => setForm(f => ({ ...f, quantity: parseInt(e.target.value) || 10 }))} className="w-full px-4 py-3 bg-foreground/5 border border-border/30 text-sm focus:outline-none focus:border-amber-500" required />
+              </div>
+              <input type="text" placeholder="Occasion (e.g., Diwali, Annual Day)" value={form.occasion} onChange={e => setForm(f => ({ ...f, occasion: e.target.value }))} className="w-full px-4 py-3 bg-foreground/5 border border-border/30 text-sm focus:outline-none focus:border-amber-500" />
+              <textarea placeholder="Additional Requirements or Message" value={form.message} onChange={e => setForm(f => ({ ...f, message: e.target.value }))} rows={4} className="w-full px-4 py-3 bg-foreground/5 border border-border/30 text-sm focus:outline-none focus:border-amber-500 resize-none" />
+              <button type="submit" disabled={loading} className="w-full btn-luxury bg-amber-500 text-black glow-gold disabled:opacity-50">{loading ? "Submitting..." : "Request Quote"}</button>
+            </form>
+          )}
+        </section>
+      </div>
+    </main>
+  );
+};
+
+// SUSTAINABILITY PAGE
+const SustainabilityPage = () => {
+  const [data, setData] = useState(null);
+
+  useEffect(() => {
+    axios.get(`${API}/sustainability`).then(({ data }) => setData(data)).catch(() => {});
+  }, []);
+
+  if (!data) return <div className="pt-32 pb-24 flex items-center justify-center"><div className="w-12 h-12 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin" /></div>;
+
+  const iconMap = {
+    recycle: <Package size={24} />,
+    leaf: <Leaf size={24} />,
+    package: <Gift size={24} />,
+    globe: <Building2 size={24} />,
+    heart: <Heart size={24} />,
+    "check-circle": <Check size={24} />
+  };
+
+  return (
+    <main data-testid="sustainability-page" className="pt-32 pb-24">
+      <div className="max-w-7xl mx-auto px-6 lg:px-8">
+        {/* Hero */}
+        <div className="text-center mb-20">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+            <p className="text-[11px] tracking-[0.3em] text-green-500 mb-3">SUSTAINABILITY</p>
+            <h1 className="font-['Cormorant_Garamond'] text-4xl lg:text-6xl mb-6">{data.hero.title}</h1>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">{data.hero.subtitle}</p>
+          </motion.div>
+        </div>
+
+        {/* Stats */}
+        <section className="mb-20 py-12 border-y border-border/20">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+              <p className="font-['Cormorant_Garamond'] text-4xl text-green-500">{(data.stats.bottles_refilled / 1000).toFixed(0)}K+</p>
+              <p className="text-xs tracking-[0.15em] uppercase text-muted-foreground mt-2">Bottles Refilled</p>
+            </motion.div>
+            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.1 }}>
+              <p className="font-['Cormorant_Garamond'] text-4xl text-green-500">{(data.stats.trees_planted / 1000).toFixed(0)}K+</p>
+              <p className="text-xs tracking-[0.15em] uppercase text-muted-foreground mt-2">Trees Planted</p>
+            </motion.div>
+            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.2 }}>
+              <p className="font-['Cormorant_Garamond'] text-4xl text-green-500">{data.stats.plastic_eliminated_kg}kg</p>
+              <p className="text-xs tracking-[0.15em] uppercase text-muted-foreground mt-2">Plastic Eliminated</p>
+            </motion.div>
+            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.3 }}>
+              <p className="font-['Cormorant_Garamond'] text-4xl text-green-500">{data.stats.artisan_families}+</p>
+              <p className="text-xs tracking-[0.15em] uppercase text-muted-foreground mt-2">Artisan Families</p>
+            </motion.div>
+          </div>
+        </section>
+
+        {/* Initiatives */}
+        <section className="mb-20">
+          <h2 className="font-['Cormorant_Garamond'] text-3xl text-center mb-12">Our Initiatives</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {data.initiatives.map((init, i) => (
+              <motion.div key={init.id} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}
+                className="glass-heavy rounded-lg p-8 card-premium">
+                <div className="w-14 h-14 mb-6 rounded-full bg-green-500/10 flex items-center justify-center text-green-500">{iconMap[init.icon]}</div>
+                <h3 className="font-['Cormorant_Garamond'] text-2xl mb-3">{init.title}</h3>
+                <p className="text-sm text-muted-foreground mb-4">{init.description}</p>
+                <p className="text-green-500 text-sm font-medium">{init.impact}</p>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+
+        {/* Certifications */}
+        <section className="text-center">
+          <h2 className="font-['Cormorant_Garamond'] text-3xl mb-8">Certified & Verified</h2>
+          <div className="flex flex-wrap justify-center gap-6">
+            {data.certifications.map((cert, i) => (
+              <motion.div key={i} initial={{ opacity: 0, scale: 0.9 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}
+                className="glass px-8 py-4 rounded-full flex items-center gap-3">
+                <Check size={18} className="text-green-500" />
+                <div className="text-left">
+                  <p className="font-['Cormorant_Garamond'] text-lg">{cert.name}</p>
+                  <p className="text-[10px] text-muted-foreground">{cert.description}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+
+        {/* CTA */}
+        <section className="mt-20 text-center glass-heavy rounded-lg p-12">
+          <Leaf size={40} className="mx-auto text-green-500 mb-6" />
+          <h2 className="font-['Cormorant_Garamond'] text-3xl mb-4">Join Our Refill Program</h2>
+          <p className="text-muted-foreground mb-8 max-w-xl mx-auto">Return your empty Fleur bottles and get 30% off on refills. Together, we can make luxury sustainable.</p>
+          <Link to="/shop" className="btn-luxury bg-green-500 text-black">Explore Refillable Collection</Link>
+        </section>
+      </div>
+    </main>
+  );
 };
 
 // APP
