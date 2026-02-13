@@ -441,6 +441,74 @@ async def get_testimonials():
 async def get_brand_story():
     return BRAND_STORY
 
+# ==================== SUSTAINABILITY DATA ====================
+
+SUSTAINABILITY_DATA = {
+    "hero": {
+        "title": "Crafted with Care, Designed for Tomorrow",
+        "subtitle": "Our commitment to sustainable luxury goes beyond fragrance — it's woven into everything we do."
+    },
+    "initiatives": [
+        {
+            "id": "refillable",
+            "title": "Refillable Bottles",
+            "description": "Our signature bottles are designed for longevity. Return them for refills at 30% off — reducing waste while saving you money.",
+            "icon": "recycle",
+            "impact": "50,000+ bottles refilled"
+        },
+        {
+            "id": "natural",
+            "title": "Natural Ingredients",
+            "description": "We source premium essential oils from sustainable farms worldwide, ensuring fair trade practices and ecological balance.",
+            "icon": "leaf",
+            "impact": "95% natural ingredients"
+        },
+        {
+            "id": "packaging",
+            "title": "Eco-Friendly Packaging",
+            "description": "Our packaging uses recycled materials and soy-based inks. Every box is plastic-free and 100% recyclable.",
+            "icon": "package",
+            "impact": "Zero single-use plastic"
+        },
+        {
+            "id": "carbon",
+            "title": "Carbon Neutral Operations",
+            "description": "We offset our carbon footprint through verified reforestation projects in the Western Ghats.",
+            "icon": "globe",
+            "impact": "10,000 trees planted"
+        },
+        {
+            "id": "community",
+            "title": "Community Support",
+            "description": "We partner with local artisan communities for packaging, supporting traditional craftsmanship and fair wages.",
+            "icon": "heart",
+            "impact": "200+ artisan families supported"
+        },
+        {
+            "id": "cruelty_free",
+            "title": "Cruelty-Free Always",
+            "description": "No animal testing, ever. Our fragrances are certified cruelty-free and vegan-friendly.",
+            "icon": "check-circle",
+            "impact": "100% cruelty-free"
+        }
+    ],
+    "certifications": [
+        {"name": "PETA Certified", "description": "Cruelty-Free"},
+        {"name": "FSC Certified", "description": "Responsible Forestry"},
+        {"name": "Green Business", "description": "Eco-Certified Operations"}
+    ],
+    "stats": {
+        "bottles_refilled": 50000,
+        "trees_planted": 10000,
+        "plastic_eliminated_kg": 5000,
+        "artisan_families": 200
+    }
+}
+
+@api_router.get("/sustainability")
+async def get_sustainability():
+    return SUSTAINABILITY_DATA
+
 # ==================== SEED DATA ====================
 
 PRODUCTS_DATA = [
