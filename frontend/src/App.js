@@ -915,7 +915,7 @@ const CartPage = () => {
           <div className="lg:col-span-2 space-y-6">
             {cart.items.map((item) => (
               <div key={item.product_id} className="glass rounded-lg p-6 flex gap-6">
-                <div className="w-24 h-24 rounded-lg overflow-hidden"><img src={getProductImage(item.product_id)} alt={item.name} className="w-full h-full object-cover" /></div>
+                <div className="w-24 h-24 rounded-lg overflow-hidden bg-gradient-to-br from-amber-900/10 to-amber-800/5"><ProductImage src={getProductImage(item.product_id)} alt={item.name} className="w-full h-full" /></div>
                 <div className="flex-1">
                   <h3 className="font-['Cormorant_Garamond'] text-xl mb-1">{item.name}</h3>
                   <p className="text-xs text-muted-foreground mb-4">{item.size}</p>
