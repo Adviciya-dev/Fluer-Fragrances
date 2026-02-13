@@ -351,17 +351,17 @@ const ProductCard = ({ product }) => {
       onClick={() => navigate(`/product/${product.slug}`)}
       className="group card-premium glass rounded-lg overflow-hidden cursor-pointer"
     >
-      <div className="relative img-zoom aspect-[3/4]">
-        <img src={productImage} alt={product.name} className="w-full h-full object-cover" loading="lazy" />
+      <div className="relative img-zoom aspect-[3/4] overflow-hidden bg-gradient-to-br from-amber-900/10 to-amber-800/5">
+        <ProductImage src={productImage} alt={product.name} className="w-full h-full" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-        <div className="absolute top-4 left-4 flex flex-col gap-2">
+        <div className="absolute top-4 left-4 flex flex-col gap-2 z-10">
           {product.is_bestseller && <span className="px-3 py-1.5 bg-amber-500 text-black text-[10px] tracking-[0.1em] uppercase">Bestseller</span>}
           {product.is_new && <span className="px-3 py-1.5 bg-white text-black text-[10px] tracking-[0.1em] uppercase">New</span>}
         </div>
-        <button onClick={(e) => { e.stopPropagation(); inWishlist ? removeFromWishlist(product.id) : addToWishlist(product.id); }} className={`absolute top-4 right-4 p-2.5 rounded-full glass opacity-0 group-hover:opacity-100 transition-all ${inWishlist ? "text-red-400" : ""}`}>
+        <button onClick={(e) => { e.stopPropagation(); inWishlist ? removeFromWishlist(product.id) : addToWishlist(product.id); }} className={`absolute top-4 right-4 p-2.5 rounded-full glass opacity-0 group-hover:opacity-100 transition-all z-10 ${inWishlist ? "text-red-400" : ""}`}>
           <Heart size={18} fill={inWishlist ? "currentColor" : "none"} />
         </button>
-        <motion.button onClick={(e) => { e.stopPropagation(); addToCart(product.id); }} className="absolute bottom-4 left-4 right-4 py-3 bg-white/95 text-black text-[11px] tracking-[0.15em] uppercase opacity-0 group-hover:opacity-100 transition-all duration-500 hover:bg-amber-500">
+        <motion.button onClick={(e) => { e.stopPropagation(); addToCart(product.id); }} className="absolute bottom-4 left-4 right-4 py-3 bg-white/95 text-black text-[11px] tracking-[0.15em] uppercase opacity-0 group-hover:opacity-100 transition-all duration-500 hover:bg-amber-500 z-10">
           Add to Cart
         </motion.button>
       </div>
