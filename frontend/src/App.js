@@ -777,8 +777,8 @@ const ProductDetailPage = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
-          <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} className="aspect-square rounded-lg overflow-hidden glass">
-            <img src={productImage} alt={product.name} className="w-full h-full object-cover" />
+          <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} className="aspect-square rounded-lg overflow-hidden glass bg-gradient-to-br from-amber-900/10 to-amber-800/5">
+            <ProductImage src={productImage} alt={product.name} className="w-full h-full" />
           </motion.div>
 
           <motion.div initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}>
