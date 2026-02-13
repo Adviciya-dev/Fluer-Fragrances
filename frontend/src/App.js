@@ -407,13 +407,13 @@ const ChatWidget = () => {
   return (
     <>
       <motion.button onClick={() => setIsOpen(!isOpen)} data-testid="chat-widget-btn" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-        className="fixed bottom-6 right-6 z-50 w-14 h-14 bg-amber-500 text-black rounded-full shadow-lg glow-gold flex items-center justify-center">
+        className="fixed bottom-6 right-6 w-14 h-14 bg-amber-500 text-black rounded-full shadow-lg glow-gold flex items-center justify-center" style={{ zIndex: 9999 }}>
         {isOpen ? <X size={22} /> : <MessageCircle size={22} />}
       </motion.button>
       <AnimatePresence>
         {isOpen && (
           <motion.div initial={{ opacity: 0, y: 20, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            data-testid="chat-panel" className="fixed bottom-24 right-6 z-50 w-[380px] max-w-[calc(100vw-3rem)] glass-heavy rounded-lg shadow-2xl overflow-hidden flex flex-col" style={{ maxHeight: "500px" }}>
+            data-testid="chat-panel" className="fixed bottom-24 right-6 w-[380px] max-w-[calc(100vw-3rem)] glass-heavy rounded-lg shadow-2xl overflow-hidden flex flex-col" style={{ maxHeight: "500px", zIndex: 9999 }}>
             <div className="p-4 border-b border-border/20 flex items-center gap-3 bg-gradient-to-r from-amber-500/10 to-transparent">
               <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center"><Sparkles size={18} className="text-amber-500" /></div>
               <div><h4 className="font-['Cormorant_Garamond'] text-lg">Fleur AI</h4><p className="text-[10px] tracking-[0.1em] text-muted-foreground uppercase">Fragrance Consultant</p></div>
