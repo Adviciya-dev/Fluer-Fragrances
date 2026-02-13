@@ -184,6 +184,144 @@ async def get_optional_user(credentials: HTTPAuthorizationCredentials = Depends(
     except Exception:
         return None
 
+# ==================== PORTFOLIO & TESTIMONIALS ====================
+
+PORTFOLIO_DATA = [
+    {
+        "id": "client_taj",
+        "name": "Taj Hotels",
+        "category": "Luxury Hospitality",
+        "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/89/Taj_Hotels_logo.svg/200px-Taj_Hotels_logo.svg.png",
+        "description": "Premium HVAC scenting solutions for Taj properties across India",
+        "locations": 15
+    },
+    {
+        "id": "client_radisson",
+        "name": "Radisson",
+        "category": "Luxury Hospitality",
+        "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9a/Radisson_logo.svg/200px-Radisson_logo.svg.png",
+        "description": "Custom fragrance experiences for Radisson hotels",
+        "locations": 8
+    },
+    {
+        "id": "client_marriott",
+        "name": "Courtyard by Marriott",
+        "category": "Luxury Hospitality",
+        "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/Marriott_Logo.svg/200px-Marriott_Logo.svg.png",
+        "description": "Signature scenting for lobbies and common areas",
+        "locations": 12
+    },
+    {
+        "id": "client_lodi",
+        "name": "The Lodhi",
+        "category": "Ultra-Luxury",
+        "logo": "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=200&h=100&fit=crop",
+        "description": "Bespoke fragrance development for exclusive suites",
+        "locations": 1
+    },
+    {
+        "id": "client_oberoi",
+        "name": "The Oberoi Group",
+        "category": "Luxury Hospitality",
+        "logo": "https://upload.wikimedia.org/wikipedia/en/thumb/3/3a/The_Oberoi_Group_Logo.svg/200px-The_Oberoi_Group_Logo.svg.png",
+        "description": "Premium aroma solutions for Oberoi properties",
+        "locations": 6
+    },
+    {
+        "id": "client_corporate",
+        "name": "Leading Corporates",
+        "category": "Corporate Offices",
+        "logo": "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=200&h=100&fit=crop",
+        "description": "Office scenting for Fortune 500 companies",
+        "locations": 50
+    }
+]
+
+TESTIMONIALS_DATA = [
+    {
+        "id": "test_1",
+        "name": "Priya Sharma",
+        "title": "Interior Designer, Mumbai",
+        "avatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop",
+        "rating": 5,
+        "text": "Fleur Fragrances transformed my home. The Ocean Secrets brings such a calming energy to my living space. The quality is unmatched — truly luxury you can experience every day.",
+        "product": "Ocean Secrets",
+        "verified": True
+    },
+    {
+        "id": "test_2",
+        "name": "Rajesh Menon",
+        "title": "Hotel General Manager",
+        "avatar": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop",
+        "rating": 5,
+        "text": "We've been using Fleur's HVAC solutions for 5 years. Our guests consistently compliment the signature scent in our lobby. It's become part of our brand identity.",
+        "product": "Corporate Solutions",
+        "verified": True
+    },
+    {
+        "id": "test_3",
+        "name": "Ananya Patel",
+        "title": "Wellness Entrepreneur, Bangalore",
+        "avatar": "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop",
+        "rating": 5,
+        "text": "The Lavender Bliss has become essential for my evening routine. The fragrance is so authentic — you can tell it's made with premium ingredients. Highly recommend!",
+        "product": "Lavender Bliss",
+        "verified": True
+    },
+    {
+        "id": "test_4",
+        "name": "Vikram Singh",
+        "title": "Luxury Collector, Delhi",
+        "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop",
+        "rating": 5,
+        "text": "As someone who collects premium fragrances from around the world, I was impressed by Musk Oudh. It rivals international brands at a fraction of the price. True Indian craftsmanship.",
+        "product": "Musk Oudh",
+        "verified": True
+    },
+    {
+        "id": "test_5",
+        "name": "Dr. Meera Krishnan",
+        "title": "Aromatherapist, Chennai",
+        "avatar": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=100&h=100&fit=crop",
+        "rating": 5,
+        "text": "I recommend Fleur to all my clients. Their Sandalwood Tranquility is perfect for meditation spaces. The quality of oils is pharmaceutical grade. Outstanding!",
+        "product": "Sandalwood Tranquility",
+        "verified": True
+    }
+]
+
+BRAND_STORY = {
+    "heritage_years": 10,
+    "tagline": "Luxury Heritage Fragrance for Modern India",
+    "mission": "Crafted in India, Trusted by Luxury Hotels — Now for You",
+    "story": "For over a decade, Fleur Fragrances has been the secret behind the signature scents of India's most prestigious luxury hotels and corporate spaces. From the grand lobbies of Taj to the executive suites of Fortune 500 companies, our fragrances have created memorable experiences for millions. Now, we bring this same luxury heritage directly to you — premium, authentic fragrances that celebrate Indian craftsmanship while embracing modern sophistication.",
+    "values": [
+        {"title": "Heritage", "description": "10+ years of expertise serving luxury hospitality"},
+        {"title": "Authenticity", "description": "Premium, natural ingredients sourced globally"},
+        {"title": "Sustainability", "description": "Eco-conscious practices and refillable bottles"},
+        {"title": "Innovation", "description": "AI-powered personalization and modern experiences"}
+    ],
+    "stats": {
+        "years_experience": 10,
+        "luxury_hotels": 40,
+        "corporate_clients": 100,
+        "happy_customers": 50000,
+        "fragrances_crafted": 200
+    }
+}
+
+@api_router.get("/portfolio")
+async def get_portfolio():
+    return {"clients": PORTFOLIO_DATA}
+
+@api_router.get("/testimonials")
+async def get_testimonials():
+    return {"testimonials": TESTIMONIALS_DATA}
+
+@api_router.get("/brand-story")
+async def get_brand_story():
+    return BRAND_STORY
+
 # ==================== SEED DATA ====================
 
 PRODUCTS_DATA = [
