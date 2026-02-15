@@ -15,28 +15,28 @@ import { Toaster, toast } from "sonner";
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
-// Premium Product Images - High Quality (using Lorem Picsum for reliable loading)
+// Premium Product Images - AI Generated (Cloud Hosted - No CORS issues)
 const PRODUCT_IMAGES = {
-  "prod_white_rose_musk": "https://picsum.photos/seed/rose/800/1000",
-  "prod_bleu_sport": "https://picsum.photos/seed/sport/800/1000",
-  "prod_fleur_enchante": "https://picsum.photos/seed/enchante/800/1000",
-  "prod_white_mulberry": "https://picsum.photos/seed/mulberry/800/1000",
-  "prod_elegance": "https://picsum.photos/seed/elegance/800/1000",
-  "prod_victoria_royale": "https://picsum.photos/seed/royale/800/1000",
-  "prod_coorg_mandarin": "https://picsum.photos/seed/mandarin/800/1000",
-  "prod_sandalwood_tranquility": "https://picsum.photos/seed/sandalwood/800/1000",
-  "prod_ocean_secrets": "https://picsum.photos/seed/ocean/800/1000",
-  "prod_mystic_whiff": "https://picsum.photos/seed/mystic/800/1000",
-  "prod_musk_oudh": "https://picsum.photos/seed/musk/800/1000",
-  "prod_morning_mist": "https://picsum.photos/seed/morning/800/1000",
-  "prod_lavender_bliss": "https://picsum.photos/seed/lavender/800/1000",
-  "prod_jasmine_neroli": "https://picsum.photos/seed/neroli/800/1000",
-  "prod_fleur_rose": "https://picsum.photos/seed/fleurrose/800/1000",
-  "prod_first_rain": "https://picsum.photos/seed/rain/800/1000",
-  "prod_jasmine_bloom": "https://picsum.photos/seed/jasmine/800/1000"
+  "prod_white_rose_musk": "https://static.prod-images.emergentagent.com/jobs/0d78cee0-8560-4fe5-ae58-44a8c6d8a45f/images/ad600fb269745cfaa23789b63fc8a7ee7d9b53b3b1b0788b8fc07271b6a8c613.png",
+  "prod_bleu_sport": "https://static.prod-images.emergentagent.com/jobs/0d78cee0-8560-4fe5-ae58-44a8c6d8a45f/images/65956bd184258f7dd9840ed40d1acdc3f5ef2137e741c60fd9c53120a1ccc323.png",
+  "prod_fleur_enchante": "https://static.prod-images.emergentagent.com/jobs/0d78cee0-8560-4fe5-ae58-44a8c6d8a45f/images/07c7907c6f0233d56b3c1fb87a4058580c9820fe40d589644913484a9068584d.png",
+  "prod_white_mulberry": "https://static.prod-images.emergentagent.com/jobs/0d78cee0-8560-4fe5-ae58-44a8c6d8a45f/images/a70b948a4043cbeade0ddbcbd6acc2afeb48338c984bf9ae2bfdd01057b430f5.png",
+  "prod_elegance": "https://static.prod-images.emergentagent.com/jobs/0d78cee0-8560-4fe5-ae58-44a8c6d8a45f/images/6cd20d66d53b8c123c67e0befa3d0b06124a49b9ff6ad40f41d0436270eabfa3.png",
+  "prod_victoria_royale": "https://static.prod-images.emergentagent.com/jobs/0d78cee0-8560-4fe5-ae58-44a8c6d8a45f/images/618b2148dfb8320eeff058e0b14dfbf7177ab3e21ad7e65b133cf26fa9ccd5ab.png",
+  "prod_coorg_mandarin": "https://static.prod-images.emergentagent.com/jobs/0d78cee0-8560-4fe5-ae58-44a8c6d8a45f/images/eb2bead279de5d405933d8976d6eb379e96e726c93fcb762b71a0cf7c5123f66.png",
+  "prod_sandalwood_tranquility": "https://static.prod-images.emergentagent.com/jobs/0d78cee0-8560-4fe5-ae58-44a8c6d8a45f/images/ca617aa3cb81ca901f1c17f3b19bde4d1a57e6f5d5b16a3a458be7067fc0a178.png",
+  "prod_ocean_secrets": "https://static.prod-images.emergentagent.com/jobs/0d78cee0-8560-4fe5-ae58-44a8c6d8a45f/images/e00a65b1796bf075fb4d12c8ebc4de17259d6075cbdcac4a6e28a5e283adbd65.png",
+  "prod_mystic_whiff": "https://static.prod-images.emergentagent.com/jobs/0d78cee0-8560-4fe5-ae58-44a8c6d8a45f/images/ea8754e7148dac876ab488619ce59d6c6f2d8d1e2d5d667312493ee902d14b54.png",
+  "prod_musk_oudh": "https://static.prod-images.emergentagent.com/jobs/0d78cee0-8560-4fe5-ae58-44a8c6d8a45f/images/24d3f49527afc2f3f05f8225e14c99ad2fceaf10742e45b30f72e791b3c86c5a.png",
+  "prod_morning_mist": "https://static.prod-images.emergentagent.com/jobs/0d78cee0-8560-4fe5-ae58-44a8c6d8a45f/images/4275c7fd9f886102c1cb93942ccd8ff4eba30d6943b4820e01d663d6d971cc6c.png",
+  "prod_lavender_bliss": "https://static.prod-images.emergentagent.com/jobs/0d78cee0-8560-4fe5-ae58-44a8c6d8a45f/images/ada31af2d44a8c47878128ef1bd0925bb15158c671dc26d1ce65eb53b0b9b189.png",
+  "prod_jasmine_neroli": "https://static.prod-images.emergentagent.com/jobs/0d78cee0-8560-4fe5-ae58-44a8c6d8a45f/images/a4cc7918dac0c25e86a46476fbe5f76787943d27118e677065a6231a7f9f9dda.png",
+  "prod_fleur_rose": "https://static.prod-images.emergentagent.com/jobs/0d78cee0-8560-4fe5-ae58-44a8c6d8a45f/images/ad600fb269745cfaa23789b63fc8a7ee7d9b53b3b1b0788b8fc07271b6a8c613.png",
+  "prod_first_rain": "https://static.prod-images.emergentagent.com/jobs/0d78cee0-8560-4fe5-ae58-44a8c6d8a45f/images/b01bdd60d3bdfd373e60ade9bb9d671452b1bf66d2b5e84b31dcba1288abef1a.png",
+  "prod_jasmine_bloom": "https://static.prod-images.emergentagent.com/jobs/0d78cee0-8560-4fe5-ae58-44a8c6d8a45f/images/a4cc7918dac0c25e86a46476fbe5f76787943d27118e677065a6231a7f9f9dda.png"
 };
 
-const FALLBACK_IMAGE = "https://picsum.photos/seed/perfume/800/1000";
+const FALLBACK_IMAGE = "https://static.prod-images.emergentagent.com/jobs/0d78cee0-8560-4fe5-ae58-44a8c6d8a45f/images/6cd20d66d53b8c123c67e0befa3d0b06124a49b9ff6ad40f41d0436270eabfa3.png";
 const getProductImage = (productId) => PRODUCT_IMAGES[productId] || FALLBACK_IMAGE;
 
 // Premium Image Component with Loading State
