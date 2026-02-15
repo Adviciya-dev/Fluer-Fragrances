@@ -701,7 +701,7 @@ const HomePage = () => {
       {/* CTA */}
       <section className="py-24 relative overflow-hidden">
         <div className="absolute inset-0">
-          <img src="https://picsum.photos/seed/ambiance/1920/1080" alt="Ambiance" className="w-full h-full object-cover opacity-20" />
+          <img src="https://static.prod-images.emergentagent.com/jobs/0d78cee0-8560-4fe5-ae58-44a8c6d8a45f/images/6cd20d66d53b8c123c67e0befa3d0b06124a49b9ff6ad40f41d0436270eabfa3.png" alt="Ambiance" className="w-full h-full object-cover opacity-20" />
           <div className="absolute inset-0 bg-gradient-to-r from-background via-background/90 to-background/70" />
         </div>
         <div className="relative max-w-7xl mx-auto px-6 lg:px-8">
@@ -1190,7 +1190,7 @@ const AboutPage = () => {
         <StatsCounter stats={brandStory?.stats} />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center my-24">
-          <img src="https://picsum.photos/seed/about/800/600" alt="About" className="rounded-lg" />
+          <img src="https://static.prod-images.emergentagent.com/jobs/0d78cee0-8560-4fe5-ae58-44a8c6d8a45f/images/ad600fb269745cfaa23789b63fc8a7ee7d9b53b3b1b0788b8fc07271b6a8c613.png" alt="About" className="rounded-lg" />
           <div>
             <h2 className="font-['Cormorant_Garamond'] text-3xl mb-6">The Fleur Story</h2>
             <p className="text-muted-foreground leading-relaxed mb-6">{brandStory?.story}</p>
