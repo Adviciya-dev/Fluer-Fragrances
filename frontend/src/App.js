@@ -41,48 +41,45 @@ const getProductImage = (productId) => PRODUCT_IMAGES[productId] || FALLBACK_IMA
 
 // Premium Image Component with Loading State
 const ProductImage = ({ src, alt, className = "", fallback = FALLBACK_IMAGE }) => {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
-  const [imageSrc, setImageSrc] = useState(src);
+  const [status, setStatus] = useState('loading'); // loading, loaded, error
+  const imgRef = useRef(null);
 
   useEffect(() => {
-    setLoading(true);
-    setError(false);
-    setImageSrc(src);
+    setStatus('loading');
     
-    // Fallback timeout - if image doesn't load in 8s, show fallback
+    // Create new image to preload
+    const img = new Image();
+    img.src = src;
+    
+    img.onload = () => setStatus('loaded');
+    img.onerror = () => setStatus('error');
+    
+    // Timeout fallback after 10 seconds
     const timeout = setTimeout(() => {
-      if (loading) {
-        setLoading(false);
+      if (status === 'loading') {
+        setStatus('error');
       }
-    }, 8000);
+    }, 10000);
     
     return () => clearTimeout(timeout);
   }, [src]);
 
+  const displaySrc = status === 'error' ? fallback : src;
+
   return (
     <div className={`relative ${className}`}>
-      {loading && (
-        <div className="absolute inset-0 bg-gradient-to-br from-amber-900/20 via-amber-800/10 to-amber-900/20 animate-pulse">
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-12 h-12 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin" />
-          </div>
+      {status === 'loading' && (
+        <div className="absolute inset-0 bg-gradient-to-br from-amber-900/20 via-amber-800/10 to-amber-900/20 animate-pulse flex items-center justify-center">
+          <div className="w-12 h-12 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin" />
         </div>
       )}
       <img
-        src={error ? fallback : imageSrc}
+        ref={imgRef}
+        src={displaySrc}
         alt={alt}
-        className={`w-full h-full object-cover transition-opacity duration-500 ${loading ? 'opacity-0' : 'opacity-100'}`}
-        loading="lazy"
-        referrerPolicy="no-referrer"
-        onLoad={() => setLoading(false)}
-        onError={() => {
-          if (!error) {
-            setError(true);
-            setImageSrc(fallback);
-          }
-          setLoading(false);
-        }}
+        className={`w-full h-full object-cover transition-opacity duration-500 ${status === 'loading' ? 'opacity-0' : 'opacity-100'}`}
+        onLoad={() => status === 'loading' && setStatus('loaded')}
+        onError={() => status !== 'error' && setStatus('error')}
       />
     </div>
   );
