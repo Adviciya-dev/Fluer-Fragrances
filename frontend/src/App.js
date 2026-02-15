@@ -15,28 +15,28 @@ import { Toaster, toast } from "sonner";
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
-// Premium Product Images - High Quality (using Unsplash for reliable CORS)
+// Premium Product Images - High Quality (using Lorem Picsum for reliable loading)
 const PRODUCT_IMAGES = {
-  "prod_white_rose_musk": "https://images.unsplash.com/photo-1595425970377-c9703cf48b6d?w=800&q=80",
-  "prod_bleu_sport": "https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=800&q=80",
-  "prod_fleur_enchante": "https://images.unsplash.com/photo-1541643600914-78b084683601?w=800&q=80",
-  "prod_white_mulberry": "https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?w=800&q=80",
-  "prod_elegance": "https://images.unsplash.com/photo-1594035910387-fea47794261f?w=800&q=80",
-  "prod_victoria_royale": "https://images.unsplash.com/photo-1588405748880-12d1d2a59f75?w=800&q=80",
-  "prod_coorg_mandarin": "https://images.unsplash.com/photo-1587017539504-67cfbddac569?w=800&q=80",
-  "prod_sandalwood_tranquility": "https://images.unsplash.com/photo-1602928321679-560bb453f190?w=800&q=80",
-  "prod_ocean_secrets": "https://images.unsplash.com/photo-1630985857549-2190fa06f44f?w=800&q=80",
-  "prod_mystic_whiff": "https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?w=800&q=80",
-  "prod_musk_oudh": "https://images.unsplash.com/photo-1615634260167-c8cdede054de?w=800&q=80",
-  "prod_morning_mist": "https://images.unsplash.com/photo-1596463124306-1dc74a1fd660?w=800&q=80",
-  "prod_lavender_bliss": "https://images.unsplash.com/photo-1644409496856-a92543edbc64?w=800&q=80",
-  "prod_jasmine_neroli": "https://images.unsplash.com/photo-1590736969955-71cc94901144?w=800&q=80",
-  "prod_fleur_rose": "https://images.unsplash.com/photo-1585386959984-a4155224a1ad?w=800&q=80",
-  "prod_first_rain": "https://images.unsplash.com/photo-1534274988757-a28bf1a57c17?w=800&q=80",
-  "prod_jasmine_bloom": "https://images.unsplash.com/photo-1490750967868-88aa4486c946?w=800&q=80"
+  "prod_white_rose_musk": "https://picsum.photos/seed/rose/800/1000",
+  "prod_bleu_sport": "https://picsum.photos/seed/sport/800/1000",
+  "prod_fleur_enchante": "https://picsum.photos/seed/enchante/800/1000",
+  "prod_white_mulberry": "https://picsum.photos/seed/mulberry/800/1000",
+  "prod_elegance": "https://picsum.photos/seed/elegance/800/1000",
+  "prod_victoria_royale": "https://picsum.photos/seed/royale/800/1000",
+  "prod_coorg_mandarin": "https://picsum.photos/seed/mandarin/800/1000",
+  "prod_sandalwood_tranquility": "https://picsum.photos/seed/sandalwood/800/1000",
+  "prod_ocean_secrets": "https://picsum.photos/seed/ocean/800/1000",
+  "prod_mystic_whiff": "https://picsum.photos/seed/mystic/800/1000",
+  "prod_musk_oudh": "https://picsum.photos/seed/musk/800/1000",
+  "prod_morning_mist": "https://picsum.photos/seed/morning/800/1000",
+  "prod_lavender_bliss": "https://picsum.photos/seed/lavender/800/1000",
+  "prod_jasmine_neroli": "https://picsum.photos/seed/neroli/800/1000",
+  "prod_fleur_rose": "https://picsum.photos/seed/fleurrose/800/1000",
+  "prod_first_rain": "https://picsum.photos/seed/rain/800/1000",
+  "prod_jasmine_bloom": "https://picsum.photos/seed/jasmine/800/1000"
 };
 
-const FALLBACK_IMAGE = "https://images.unsplash.com/photo-1541643600914-78b084683601?w=800&q=80";
+const FALLBACK_IMAGE = "https://picsum.photos/seed/perfume/800/1000";
 const getProductImage = (productId) => PRODUCT_IMAGES[productId] || FALLBACK_IMAGE;
 
 // Premium Image Component with Loading State
