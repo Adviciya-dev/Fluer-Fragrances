@@ -121,7 +121,7 @@ class TestCorporateGiftingAPI:
         """Test POST /api/corporate-gifting/inquiry"""
         inquiry_data = {
             "company_name": "TEST_Company",
-            "contact_person": "Test Person",
+            "contact_name": "Test Person",
             "email": "test@example.com",
             "phone": "9876543210",
             "package_interest": "gold",
