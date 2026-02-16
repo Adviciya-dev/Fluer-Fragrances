@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { Toaster, toast } from "sonner";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const BACKEND_URL = 'https://nowxe3l678.execute-api.ap-south-1.amazonaws.com';
 const API = `${BACKEND_URL}/api`;
 
 // Premium Product Images - AI Generated (Cloud Hosted - No CORS issues)
