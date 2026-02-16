@@ -1343,7 +1343,78 @@ async def ai_identify_perfume(request: ImageAnalysisRequest, user: dict = Depend
 
 @api_router.post("/ai/scent-finder")
 async def ai_scent_finder(request: ScentFinderRequest):
-    raise HTTPException(status_code=503, detail="AI features are currently disabled")
+    answers = {a.question_id: a.answer for a in request.answers}
+
+    # Product catalog with tags for matching
+    products = [
+        {"product_id": "prod_white_rose_musk", "name": "White Rose Musk", "price": 520, "mood": ["romantic"], "space": ["bedroom"], "family": ["floral"], "intensity": ["strong"]},
+        {"product_id": "prod_bleu_sport", "name": "Bleu Sport", "price": 385, "mood": ["energizing"], "space": ["office", "entire"], "family": ["fresh"], "intensity": ["medium"]},
+        {"product_id": "prod_fleur_enchante", "name": "Fleur Enchanté", "price": 456, "mood": ["sophisticated"], "space": ["living"], "family": ["floral"], "intensity": ["medium"]},
+        {"product_id": "prod_white_mulberry", "name": "White Mulberry", "price": 382, "mood": ["relaxing"], "space": ["bedroom", "living"], "family": ["floral"], "intensity": ["light"]},
+        {"product_id": "prod_elegance", "name": "Elegance", "price": 350, "mood": ["sophisticated"], "space": ["living", "entire"], "family": ["oriental"], "intensity": ["strong"]},
+        {"product_id": "prod_victoria_royale", "name": "Victoria Royale", "price": 300, "mood": ["sophisticated"], "space": ["living", "entire"], "family": ["oriental"], "intensity": ["strong"]},
+        {"product_id": "prod_coorg_mandarin", "name": "Coorg Mandarin", "price": 351, "mood": ["energizing"], "space": ["office", "entire"], "family": ["fresh"], "intensity": ["medium"]},
+        {"product_id": "prod_sandalwood_tranquility", "name": "Sandalwood Tranquility", "price": 300, "mood": ["relaxing"], "space": ["bedroom", "living"], "family": ["woody"], "intensity": ["medium"]},
+        {"product_id": "prod_ocean_secrets", "name": "Ocean Secrets", "price": 300, "mood": ["energizing", "relaxing"], "space": ["entire", "living", "office"], "family": ["fresh"], "intensity": ["medium"]},
+        {"product_id": "prod_mystic_whiff", "name": "Mystic Whiff", "price": 250, "mood": ["romantic", "sophisticated"], "space": ["bedroom", "living"], "family": ["oriental"], "intensity": ["medium"]},
+        {"product_id": "prod_musk_oudh", "name": "Musk Oudh", "price": 550, "mood": ["sophisticated", "romantic"], "space": ["living", "bedroom"], "family": ["woody"], "intensity": ["strong"]},
+        {"product_id": "prod_morning_mist", "name": "Morning Mist", "price": 280, "mood": ["energizing"], "space": ["entire", "office"], "family": ["fresh"], "intensity": ["light"]},
+        {"product_id": "prod_lavender_bliss", "name": "Lavender Bliss", "price": 280, "mood": ["relaxing"], "space": ["bedroom"], "family": ["floral"], "intensity": ["light"]},
+        {"product_id": "prod_jasmine_neroli", "name": "Jasmine Neroli", "price": 250, "mood": ["romantic", "relaxing"], "space": ["bedroom", "living"], "family": ["floral"], "intensity": ["medium"]},
+        {"product_id": "prod_fleur_rose", "name": "Fleur Rose", "price": 280, "mood": ["romantic", "sophisticated"], "space": ["living", "bedroom"], "family": ["floral"], "intensity": ["medium"]},
+        {"product_id": "prod_first_rain", "name": "First Rain", "price": 300, "mood": ["relaxing", "energizing"], "space": ["entire", "living"], "family": ["fresh"], "intensity": ["medium"]},
+        {"product_id": "prod_jasmine_bloom", "name": "Jasmine Bloom", "price": 250, "mood": ["relaxing"], "space": ["bedroom", "living"], "family": ["floral"], "intensity": ["light"]},
+    ]
+
+    # Map user answers to tags
+    mood_map = {"Relaxing & Calming": "relaxing", "Energizing & Fresh": "energizing", "Romantic & Sensual": "romantic", "Sophisticated & Luxurious": "sophisticated"}
+    space_map = {"Bedroom": "bedroom", "Living Room": "living", "Office/Workspace": "office", "Entire Home": "entire"}
+    family_map = {"Floral (Rose, Jasmine)": "floral", "Woody (Sandalwood, Oud)": "woody", "Fresh (Ocean, Citrus)": "fresh", "Oriental (Vanilla, Musk)": "oriental"}
+    intensity_map = {"Light & Subtle": "light", "Medium & Balanced": "medium", "Strong & Long-lasting": "strong"}
+
+    user_mood = mood_map.get(answers.get("mood", ""), "")
+    user_space = space_map.get(answers.get("space", ""), "")
+    user_family = family_map.get(answers.get("preference", ""), "")
+    user_intensity = intensity_map.get(answers.get("intensity", ""), "")
+
+    # Score each product
+    scored = []
+    for p in products:
+        score = 0
+        if user_mood in p["mood"]:
+            score += 30
+        if user_space in p["space"]:
+            score += 25
+        if user_family in p["family"]:
+            score += 30
+        if user_intensity in p["intensity"]:
+            score += 15
+        scored.append((score, p))
+
+    # Sort by score descending, take top 3
+    scored.sort(key=lambda x: x[0], reverse=True)
+    top3 = scored[:3]
+
+    reasons = {
+        "relaxing": "Perfect for creating a calm, soothing atmosphere",
+        "energizing": "Ideal for boosting energy and freshness",
+        "romantic": "Sets a beautiful romantic ambiance",
+        "sophisticated": "Exudes elegance and refined luxury",
+    }
+
+    recommendations = []
+    for score, p in top3:
+        match_score = min(98, max(70, score))
+        reason = reasons.get(user_mood, "A wonderful match for your preferences")
+        recommendations.append({
+            "product_id": p["product_id"],
+            "name": p["name"],
+            "price": p["price"],
+            "match_score": match_score,
+            "reason": reason,
+        })
+
+    return {"recommendations": recommendations}
 
 # ==================== CONTACT ROUTES ====================
 
