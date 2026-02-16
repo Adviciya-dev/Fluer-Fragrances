@@ -1151,15 +1151,60 @@ async def get_order(order_id: str, user: dict = Depends(get_current_user)):
 
 @api_router.post("/checkout/stripe")
 async def create_stripe_checkout(request: CheckoutRequest, http_request: Request, user: dict = Depends(get_current_user)):
-    raise HTTPException(status_code=503, detail="Stripe payments are currently disabled")
+    # Direct checkout - no payment gateway
+    total = 0.0
+    items_details = []
+    for item in request.items:
+        product = await db.products.find_one({"id": item.product_id}, {"_id": 0})
+        if product:
+            total += product["price"] * item.quantity
+            items_details.append({
+                "product_id": product["id"],
+                "name": product["name"],
+                "price": product["price"],
+                "quantity": item.quantity
+            })
+
+    if total <= 0:
+        raise HTTPException(status_code=400, detail="Cart is empty")
+
+    order_id = str(uuid.uuid4())
+
+    # Create order directly
+    order = {
+        "id": order_id,
+        "user_id": user["id"],
+        "items": items_details,
+        "total_amount": total,
+        "payment_method": "direct",
+        "payment_status": "confirmed",
+        "order_status": "confirmed",
+        "shipping_address": {},
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.orders.insert_one(order)
+
+    # Clear cart
+    await db.carts.update_one(
+        {"user_id": user["id"]},
+        {"$set": {"items": [], "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+
+    # Redirect to success page
+    host_url = request.origin_url
+    return {"url": f"{host_url}/checkout/success?session_id={order_id}", "session_id": order_id}
 
 @api_router.get("/checkout/status/{session_id}")
 async def get_checkout_status(session_id: str, user: dict = Depends(get_current_user)):
-    raise HTTPException(status_code=503, detail="Stripe payments are currently disabled")
-
-@api_router.post("/webhook/stripe")
-async def stripe_webhook(request: Request):
-    raise HTTPException(status_code=503, detail="Stripe payments are currently disabled")
+    order = await db.orders.find_one({"id": session_id, "user_id": user["id"]}, {"_id": 0})
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    return {
+        "status": order.get("order_status", "confirmed"),
+        "payment_status": order.get("payment_status", "confirmed"),
+        "amount_total": order.get("total_amount", 0),
+        "currency": "INR"
+    }
 
 @api_router.post("/checkout/razorpay")
 async def create_razorpay_order(request: CheckoutRequest, user: dict = Depends(get_current_user)):
