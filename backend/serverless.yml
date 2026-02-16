@@ -9,12 +9,9 @@ provider:
   timeout: 30
   memorySize: 512
   environment:
-    MONGO_URL: mongodb+srv://nivedhappu042_db_user:<db_password>@cluster0.m9yue03.mongodb.net/?appName=Cluster0
+    MONGO_URL: mongodb+srv://nivedhappu042_db_user:JvjBUdaHykzj7CHZ@cluster0.m9yue03.mongodb.net/?appName=Cluster0
     DB_NAME: fleur_fragrances
     JWT_SECRET: fleur_fragrances_secret_key_2025
-    STRIPE_API_KEY: sk_test_emergent
-    STRIPE_WEBHOOK_SECRET: ''
-    OPENAI_API_KEY: ${env:OPENAI_API_KEY, ''}
     CORS_ORIGINS: '*'
 
 functions:

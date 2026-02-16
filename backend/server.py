@@ -13,8 +13,6 @@ from datetime import datetime, timezone, timedelta
 import jwt
 import bcrypt
 import json
-import stripe
-import openai
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -1153,133 +1151,15 @@ async def get_order(order_id: str, user: dict = Depends(get_current_user)):
 
 @api_router.post("/checkout/stripe")
 async def create_stripe_checkout(request: CheckoutRequest, http_request: Request, user: dict = Depends(get_current_user)):
-    stripe.api_key = os.environ.get("STRIPE_API_KEY")
-
-    # Calculate total from cart
-    total = 0.0
-    items_details = []
-    line_items = []
-    for item in request.items:
-        product = await db.products.find_one({"id": item.product_id}, {"_id": 0})
-        if product:
-            total += product["price"] * item.quantity
-            items_details.append({
-                "product_id": product["id"],
-                "name": product["name"],
-                "price": product["price"],
-                "quantity": item.quantity
-            })
-            # Convert INR to USD cents (approximate rate)
-            unit_amount = int(round(product["price"] / 83 * 100))
-            line_items.append({
-                "price_data": {
-                    "currency": "usd",
-                    "product_data": {"name": product["name"]},
-                    "unit_amount": unit_amount,
-                },
-                "quantity": item.quantity,
-            })
-
-    if total <= 0:
-        raise HTTPException(status_code=400, detail="Cart is empty")
-
-    host_url = request.origin_url
-    success_url = f"{host_url}/checkout/success?session_id={{CHECKOUT_SESSION_ID}}"
-    cancel_url = f"{host_url}/cart"
-
-    session = stripe.checkout.Session.create(
-        payment_method_types=["card"],
-        line_items=line_items,
-        mode="payment",
-        success_url=success_url,
-        cancel_url=cancel_url,
-        metadata={
-            "user_id": user["id"],
-            "items": json.dumps(items_details)
-        },
-    )
-
-    # Create payment transaction record
-    transaction = {
-        "id": str(uuid.uuid4()),
-        "session_id": session.id,
-        "user_id": user["id"],
-        "amount": total,
-        "currency": "INR",
-        "payment_method": "stripe",
-        "payment_status": "pending",
-        "items": items_details,
-        "created_at": datetime.now(timezone.utc).isoformat()
-    }
-    await db.payment_transactions.insert_one(transaction)
-
-    return {"url": session.url, "session_id": session.id}
+    raise HTTPException(status_code=503, detail="Stripe payments are currently disabled")
 
 @api_router.get("/checkout/status/{session_id}")
 async def get_checkout_status(session_id: str, user: dict = Depends(get_current_user)):
-    stripe.api_key = os.environ.get("STRIPE_API_KEY")
-
-    session = stripe.checkout.Session.retrieve(session_id)
-
-    # Update transaction status
-    if session.payment_status == "paid":
-        transaction = await db.payment_transactions.find_one({"session_id": session_id})
-        if transaction and transaction.get("payment_status") != "paid":
-            await db.payment_transactions.update_one(
-                {"session_id": session_id},
-                {"$set": {"payment_status": "paid", "updated_at": datetime.now(timezone.utc).isoformat()}}
-            )
-
-            # Create order
-            order = {
-                "id": str(uuid.uuid4()),
-                "user_id": transaction["user_id"],
-                "items": transaction["items"],
-                "total_amount": transaction["amount"],
-                "payment_method": "stripe",
-                "payment_status": "paid",
-                "payment_session_id": session_id,
-                "order_status": "confirmed",
-                "shipping_address": {},
-                "created_at": datetime.now(timezone.utc).isoformat()
-            }
-            await db.orders.insert_one(order)
-
-            # Clear cart
-            await db.carts.update_one(
-                {"user_id": transaction["user_id"]},
-                {"$set": {"items": []}}
-            )
-
-    return {
-        "status": session.status,
-        "payment_status": session.payment_status,
-        "amount_total": session.amount_total,
-        "currency": session.currency
-    }
+    raise HTTPException(status_code=503, detail="Stripe payments are currently disabled")
 
 @api_router.post("/webhook/stripe")
 async def stripe_webhook(request: Request):
-    stripe.api_key = os.environ.get("STRIPE_API_KEY")
-    body = await request.body()
-    signature = request.headers.get("Stripe-Signature", "")
-    webhook_secret = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
-
-    try:
-        event = stripe.Webhook.construct_event(body, signature, webhook_secret)
-
-        if event["type"] == "checkout.session.completed":
-            session = event["data"]["object"]
-            if session.get("payment_status") == "paid":
-                await db.payment_transactions.update_one(
-                    {"session_id": session["id"]},
-                    {"$set": {"payment_status": "paid"}}
-                )
-
-        return {"status": "processed"}
-    except Exception as e:
-        logging.error(f"Webhook error: {e}")
-        return {"status": "error"}
+    raise HTTPException(status_code=503, detail="Stripe payments are currently disabled")
 
 @api_router.post("/checkout/razorpay")
 async def create_razorpay_order(request: CheckoutRequest, user: dict = Depends(get_current_user)):
@@ -1455,179 +1335,15 @@ class ImageAnalysisRequest(BaseModel):
 
 @api_router.post("/ai/chat")
 async def ai_chat(message: ChatMessage, user: dict = Depends(get_optional_user)):
-    session_id = message.session_id or str(uuid.uuid4())
-
-    system_message = """You are Fleur, the premium AI fragrance consultant for Fleur Fragrances — a luxury aroma oils brand based in Mumbai, India. You embody sophistication, warmth, and deep expertise in the world of fragrances.
-
-## YOUR PERSONA
-- Speak elegantly but warmly, like a knowledgeable friend at a luxury boutique
-- Use sensory-rich language to describe scents
-- Be concise yet evocative — paint pictures with words
-
-## YOUR EXPERTISE
-1. **Fragrance Profiling**: Understand what scents suit different personalities, moods, and spaces
-2. **Scent Families**: Expert in Floral, Woody, Fresh, Citrus, Oriental/Luxury categories
-3. **Space Recommendations**: Match fragrances to spaces (bedroom, living room, office, spa)
-4. **Layering & Pairing**: Suggest complementary fragrances
-5. **Perfume Identification**: When shown images, identify perfume bottles or describe scent profiles
-6. **Aromatherapy Benefits**: Explain therapeutic benefits of each scent
-
-## OUR COLLECTION (All 100ml)
-| Product | Price | Family | Best For |
-|---------|-------|--------|----------|
-| White Rose Musk | ₹520 | Floral | Romantic bedrooms |
-| Bleu Sport | ₹385 | Fresh | Energizing spaces, gyms |
-| Fleur Enchanté | ₹456 | Floral | Elegant living rooms |
-| White Mulberry | ₹382 | Fruity | Cozy, sweet ambiance |
-| Elegance | ₹350 | Luxury | Special occasions |
-| Victoria Royale | ₹300 | Luxury | Grand entrances |
-| Coorg Mandarin | ₹351 | Citrus | Morning energy |
-| Sandalwood Tranquility | ₹300 | Woody | Meditation, calm |
-| Ocean Secrets | ₹300 | Fresh | Universal favorite |
-| Mystic Whiff | ₹250 | Oriental | Intriguing spaces |
-| Musk Oudh | ₹550 | Woody | Premium luxury |
-| Morning Mist | ₹280 | Fresh | Wake-up freshness |
-| Lavender Bliss | ₹280 | Floral | Sleep & relaxation |
-| Jasmine Neroli | ₹250 | Floral | Mediterranean feel |
-| Fleur Rose | ₹280 | Floral | Classic elegance |
-| First Rain | ₹300 | Fresh | Nostalgic, earthy |
-| Jasmine Bloom | ₹250 | Floral | Peace & serenity |
-
-## RESPONSE STYLE
-- Keep responses 2-4 sentences unless detail is requested
-- Use elegant punctuation and formatting
-- Include product recommendations when relevant
-- End with a subtle prompt to explore or ask more
-
-When asked to identify fragrances from images, analyze visual cues like bottle shape, color, brand elements, and provide your best assessment."""
-
-    client_ai = openai.OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
-    completion = client_ai.chat.completions.create(
-        model="gpt-4o",
-        messages=[
-            {"role": "system", "content": system_message},
-            {"role": "user", "content": message.message},
-        ],
-    )
-    response = completion.choices[0].message.content
-
-    # Store chat history
-    await db.chat_history.insert_one({
-        "session_id": session_id,
-        "user_id": user["id"] if user else None,
-        "user_message": message.message,
-        "ai_response": response,
-        "created_at": datetime.now(timezone.utc).isoformat()
-    })
-
-    return {"response": response, "session_id": session_id}
+    raise HTTPException(status_code=503, detail="AI features are currently disabled")
 
 @api_router.post("/ai/identify-perfume")
 async def ai_identify_perfume(request: ImageAnalysisRequest, user: dict = Depends(get_optional_user)):
-    session_id = str(uuid.uuid4())
-
-    system_message = """You are an expert perfume identifier and fragrance analyst. When shown an image:
-1. Identify the perfume brand and name if recognizable
-2. Describe the bottle design and visual elements
-3. Suggest what scent family it likely belongs to based on branding/design
-4. Recommend similar fragrances from Fleur Fragrances collection
-
-If the image shows flowers, ingredients, or ambiance, describe what scent profile they represent."""
-
-    question = request.question or "Identify this perfume or fragrance"
-
-    if request.image_url:
-        image_content = {"type": "image_url", "image_url": {"url": request.image_url}}
-    elif request.image_base64:
-        image_content = {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{request.image_base64}"}}
-    else:
-        return {"error": "Please provide an image URL or base64 image"}
-
-    client_ai = openai.OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
-    completion = client_ai.chat.completions.create(
-        model="gpt-4o",
-        messages=[
-            {"role": "system", "content": system_message},
-            {"role": "user", "content": [
-                {"type": "text", "text": question},
-                image_content,
-            ]},
-        ],
-    )
-    response = completion.choices[0].message.content
-
-    return {"analysis": response, "session_id": session_id}
+    raise HTTPException(status_code=503, detail="AI features are currently disabled")
 
 @api_router.post("/ai/scent-finder")
 async def ai_scent_finder(request: ScentFinderRequest):
-    # Build context from answers
-    answers_text = "\n".join([f"- {a.question_id}: {a.answer}" for a in request.answers])
-
-    system_message = """You are an expert fragrance matcher for Fleur Fragrances. Based on the user's quiz answers, recommend 3 perfect fragrances from our collection.
-
-Our products:
-1. White Rose Musk (₹520) - Floral, romantic, bedroom
-2. Bleu Sport (₹385) - Fresh, aquatic, energizing
-3. Fleur Enchanté (₹456.50) - Floral, enchanting, elegant
-4. White Mulberry (₹382.50) - Fruity, sweet, cozy
-5. Elegance (₹350) - Luxury, sophisticated, special occasions
-6. Victoria Royale (₹300) - Royal, opulent, grand
-7. Coorg Mandarin (₹351) - Citrus, fresh, energizing
-8. Sandalwood Tranquility (₹300) - Woody, calming, meditation
-9. Ocean Secrets (₹300) - Fresh, marine, refreshing (Bestseller)
-10. Mystic Whiff (₹250) - Mysterious, unique, intriguing
-11. Musk Oudh (₹550) - Luxury, woody, precious (New)
-12. Morning Mist (₹280) - Fresh, clean, awakening
-13. Lavender Bliss (₹280) - Floral, calming, sleep
-14. Jasmine Neroli (₹250) - Floral, romantic, Mediterranean
-15. Fleur Rose (₹280) - Rose, classic, elegant
-16. First Rain (₹300) - Petrichor, nostalgic, refreshing
-17. Jasmine Bloom (₹250) - Pure jasmine, peaceful
-
-Return JSON with exactly 3 recommendations in this format:
-{
-  "recommendations": [
-    {"product_id": "prod_xxx", "name": "Product Name", "price": 000, "match_score": 95, "reason": "Why this matches"}
-  ]
-}"""
-
-    prompt = f"""Based on these quiz answers, recommend 3 fragrances:
-{answers_text}
-
-Return only valid JSON."""
-
-    client_ai = openai.OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
-    completion = client_ai.chat.completions.create(
-        model="gpt-4o",
-        messages=[
-            {"role": "system", "content": system_message},
-            {"role": "user", "content": prompt},
-        ],
-    )
-    response = completion.choices[0].message.content
-    
-    # Parse JSON response
-    try:
-        # Clean the response
-        clean_response = response.strip()
-        if clean_response.startswith("```json"):
-            clean_response = clean_response[7:]
-        if clean_response.startswith("```"):
-            clean_response = clean_response[3:]
-        if clean_response.endswith("```"):
-            clean_response = clean_response[:-3]
-        
-        result = json.loads(clean_response)
-        return result
-    except json.JSONDecodeError:
-        # Fallback recommendations
-        return {
-            "recommendations": [
-                {"product_id": "prod_ocean_secrets", "name": "Ocean Secrets", "price": 300, "match_score": 90, "reason": "A versatile bestseller perfect for any space"},
-                {"product_id": "prod_lavender_bliss", "name": "Lavender Bliss", "price": 280, "match_score": 85, "reason": "Calming and universally loved"},
-                {"product_id": "prod_elegance", "name": "Elegance", "price": 350, "match_score": 80, "reason": "Sophisticated choice for discerning tastes"}
-            ]
-        }
+    raise HTTPException(status_code=503, detail="AI features are currently disabled")
 
 # ==================== CONTACT ROUTES ====================
 
