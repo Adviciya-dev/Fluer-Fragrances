@@ -1677,6 +1677,10 @@ async def seed_data():
 async def root():
     return {"message": "Fleur Fragrances API", "version": "1.0"}
 
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy", "service": "fleur-fragrances-api"}
+
 # Include the router
 app.include_router(api_router)
 
