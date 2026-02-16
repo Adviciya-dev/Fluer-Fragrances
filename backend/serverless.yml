@@ -27,10 +27,9 @@ custom:
   pythonRequirements:
     slim: true
     strip: false
-    slimPatternsAppendDefaults: true
+    slimPatternsAppendDefaults: false
     slimPatterns:
       - '**/*.egg-info*'
-      - '**/*.dist-info*'
       - '**/__pycache__*'
       - '**/tests/**'
       - '**/test/**'
