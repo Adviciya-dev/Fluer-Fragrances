@@ -1335,7 +1335,49 @@ class ImageAnalysisRequest(BaseModel):
 
 @api_router.post("/ai/chat")
 async def ai_chat(message: ChatMessage, user: dict = Depends(get_optional_user)):
-    raise HTTPException(status_code=503, detail="AI features are currently disabled")
+    session_id = message.session_id or str(uuid.uuid4())
+    msg = message.message.lower()
+
+    # Keyword-based response system
+    if any(w in msg for w in ["hello", "hi", "hey", "greet"]):
+        response = "Welcome to Fleur Fragrances! I'm your fragrance consultant. Whether you're looking for something calming, energizing, or romantic \u2014 I'd love to help you find the perfect scent. What are you looking for today?"
+    elif any(w in msg for w in ["relax", "calm", "sleep", "stress", "peace"]):
+        response = "For relaxation, I'd recommend **Lavender Bliss** (\u20b9280) \u2014 perfect for unwinding before sleep, or **Sandalwood Tranquility** (\u20b9300) for a meditative calm. **Jasmine Bloom** (\u20b9250) also brings a serene, peaceful ambiance. Would you like to know more about any of these?"
+    elif any(w in msg for w in ["energy", "fresh", "morning", "wake", "active"]):
+        response = "For an energizing boost, try **Bleu Sport** (\u20b9385) \u2014 fresh and invigorating, or **Coorg Mandarin** (\u20b9351) for a bright citrus kick. **Morning Mist** (\u20b9280) is also wonderful for starting your day with freshness. Shall I tell you more?"
+    elif any(w in msg for w in ["romantic", "love", "date", "sensual", "intimate"]):
+        response = "For a romantic atmosphere, **White Rose Musk** (\u20b9520) is exquisite \u2014 rich, floral, and deeply sensual. **Jasmine Neroli** (\u20b9250) offers a Mediterranean romance, while **Fleur Rose** (\u20b9280) is timeless elegance. Which one intrigues you?"
+    elif any(w in msg for w in ["luxury", "premium", "expensive", "best", "gift", "special"]):
+        response = "For a luxurious experience, **Musk Oudh** (\u20b9550) is our premium offering \u2014 rich, woody, and unforgettable. **Elegance** (\u20b9350) and **Victoria Royale** (\u20b9300) also exude sophistication. Perfect for special occasions or gifting!"
+    elif any(w in msg for w in ["wood", "sandal", "oud", "earthy"]):
+        response = "Our woody collection is truly special. **Sandalwood Tranquility** (\u20b9300) brings meditative calm, while **Musk Oudh** (\u20b9550) is bold and luxurious. **First Rain** (\u20b9300) captures that beautiful earthy petrichor. Which speaks to you?"
+    elif any(w in msg for w in ["floral", "rose", "jasmine", "flower"]):
+        response = "Our floral range is enchanting! **White Rose Musk** (\u20b9520) for deep romance, **Fleur Enchant\u00e9** (\u20b9456) for elegance, **Lavender Bliss** (\u20b9280) for calm, and **Jasmine Bloom** (\u20b9250) for pure serenity. What mood are you going for?"
+    elif any(w in msg for w in ["ocean", "sea", "marine", "aqua", "water"]):
+        response = "**Ocean Secrets** (\u20b9300) is our bestseller \u2014 a refreshing marine fragrance that's universally loved. It works beautifully in any space and any season. A truly versatile choice!"
+    elif any(w in msg for w in ["cheap", "affordable", "budget", "low price"]):
+        response = "Great value picks: **Jasmine Bloom** (\u20b9250), **Mystic Whiff** (\u20b9250), and **Jasmine Neroli** (\u20b9250) are all beautifully crafted at our most accessible price point. **Morning Mist** and **Lavender Bliss** at \u20b9280 are also excellent choices!"
+    elif any(w in msg for w in ["bedroom", "living", "office", "space", "room", "home"]):
+        response = "**Bedroom**: Lavender Bliss or White Rose Musk for a restful retreat. **Living Room**: Fleur Enchant\u00e9 or Ocean Secrets for welcoming elegance. **Office**: Bleu Sport or Coorg Mandarin for focus. **Entire Home**: Ocean Secrets or First Rain for universal appeal!"
+    elif any(w in msg for w in ["popular", "bestseller", "recommend", "suggest", "favourite"]):
+        response = "Our top picks: **Ocean Secrets** (\u20b9300) is the bestseller \u2014 fresh and universally loved. **Musk Oudh** (\u20b9550) is our newest luxury addition. **White Rose Musk** (\u20b9520) is a romantic favourite. Would you like to explore any of these?"
+    elif any(w in msg for w in ["all", "collection", "products", "list", "catalog"]):
+        response = "We have 17 exquisite fragrances across Floral, Woody, Fresh, Citrus, and Oriental families, ranging from \u20b9250 to \u20b9550. Visit our shop to browse the full collection, or tell me your mood and I'll find your perfect match!"
+    elif any(w in msg for w in ["thank", "thanks", "bye", "goodbye"]):
+        response = "It was lovely helping you! Remember, the right fragrance transforms a space into an experience. Visit us anytime you need guidance. Happy scenting!"
+    else:
+        response = "I'd love to help you find the perfect fragrance! You can ask me about scents for relaxation, energy, romance, or luxury. Tell me about the mood you want to create, or the space you're decorating, and I'll recommend the ideal Fleur fragrance for you."
+
+    # Store chat history
+    await db.chat_history.insert_one({
+        "session_id": session_id,
+        "user_id": user["id"] if user else None,
+        "user_message": message.message,
+        "ai_response": response,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    })
+
+    return {"response": response, "session_id": session_id}
 
 @api_router.post("/ai/identify-perfume")
 async def ai_identify_perfume(request: ImageAnalysisRequest, user: dict = Depends(get_optional_user)):
