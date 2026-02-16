@@ -13,6 +13,8 @@ from datetime import datetime, timezone, timedelta
 import jwt
 import bcrypt
 import json
+import stripe
+import openai
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -1151,11 +1153,12 @@ async def get_order(order_id: str, user: dict = Depends(get_current_user)):
 
 @api_router.post("/checkout/stripe")
 async def create_stripe_checkout(request: CheckoutRequest, http_request: Request, user: dict = Depends(get_current_user)):
-    from emergentintegrations.payments.stripe.checkout import StripeCheckout, CheckoutSessionRequest
-    
+    stripe.api_key = os.environ.get("STRIPE_API_KEY")
+
     # Calculate total from cart
     total = 0.0
     items_details = []
+    line_items = []
     for item in request.items:
         product = await db.products.find_one({"id": item.product_id}, {"_id": 0})
         if product:
@@ -1166,40 +1169,40 @@ async def create_stripe_checkout(request: CheckoutRequest, http_request: Request
                 "price": product["price"],
                 "quantity": item.quantity
             })
-    
+            # Convert INR to USD cents (approximate rate)
+            unit_amount = int(round(product["price"] / 83 * 100))
+            line_items.append({
+                "price_data": {
+                    "currency": "usd",
+                    "product_data": {"name": product["name"]},
+                    "unit_amount": unit_amount,
+                },
+                "quantity": item.quantity,
+            })
+
     if total <= 0:
         raise HTTPException(status_code=400, detail="Cart is empty")
-    
+
     host_url = request.origin_url
-    webhook_url = f"{host_url}/api/webhook/stripe"
     success_url = f"{host_url}/checkout/success?session_id={{CHECKOUT_SESSION_ID}}"
     cancel_url = f"{host_url}/cart"
-    
-    stripe_checkout = StripeCheckout(
-        api_key=os.environ.get("STRIPE_API_KEY"),
-        webhook_url=webhook_url
-    )
-    
-    # Convert INR to USD for Stripe (approximate rate)
-    amount_usd = round(total / 83, 2)
-    
-    checkout_request = CheckoutSessionRequest(
-        amount=amount_usd,
-        currency="usd",
+
+    session = stripe.checkout.Session.create(
+        payment_method_types=["card"],
+        line_items=line_items,
+        mode="payment",
         success_url=success_url,
         cancel_url=cancel_url,
         metadata={
             "user_id": user["id"],
             "items": json.dumps(items_details)
-        }
+        },
     )
-    
-    session = await stripe_checkout.create_checkout_session(checkout_request)
-    
+
     # Create payment transaction record
     transaction = {
         "id": str(uuid.uuid4()),
-        "session_id": session.session_id,
+        "session_id": session.id,
         "user_id": user["id"],
         "amount": total,
         "currency": "INR",
@@ -1209,29 +1212,24 @@ async def create_stripe_checkout(request: CheckoutRequest, http_request: Request
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     await db.payment_transactions.insert_one(transaction)
-    
-    return {"url": session.url, "session_id": session.session_id}
+
+    return {"url": session.url, "session_id": session.id}
 
 @api_router.get("/checkout/status/{session_id}")
 async def get_checkout_status(session_id: str, user: dict = Depends(get_current_user)):
-    from emergentintegrations.payments.stripe.checkout import StripeCheckout
-    
-    stripe_checkout = StripeCheckout(
-        api_key=os.environ.get("STRIPE_API_KEY"),
-        webhook_url=""
-    )
-    
-    status = await stripe_checkout.get_checkout_status(session_id)
-    
+    stripe.api_key = os.environ.get("STRIPE_API_KEY")
+
+    session = stripe.checkout.Session.retrieve(session_id)
+
     # Update transaction status
-    if status.payment_status == "paid":
+    if session.payment_status == "paid":
         transaction = await db.payment_transactions.find_one({"session_id": session_id})
         if transaction and transaction.get("payment_status") != "paid":
             await db.payment_transactions.update_one(
                 {"session_id": session_id},
                 {"$set": {"payment_status": "paid", "updated_at": datetime.now(timezone.utc).isoformat()}}
             )
-            
+
             # Create order
             order = {
                 "id": str(uuid.uuid4()),
@@ -1246,41 +1244,38 @@ async def get_checkout_status(session_id: str, user: dict = Depends(get_current_
                 "created_at": datetime.now(timezone.utc).isoformat()
             }
             await db.orders.insert_one(order)
-            
+
             # Clear cart
             await db.carts.update_one(
                 {"user_id": transaction["user_id"]},
                 {"$set": {"items": []}}
             )
-    
+
     return {
-        "status": status.status,
-        "payment_status": status.payment_status,
-        "amount_total": status.amount_total,
-        "currency": status.currency
+        "status": session.status,
+        "payment_status": session.payment_status,
+        "amount_total": session.amount_total,
+        "currency": session.currency
     }
 
 @api_router.post("/webhook/stripe")
 async def stripe_webhook(request: Request):
-    from emergentintegrations.payments.stripe.checkout import StripeCheckout
-    
+    stripe.api_key = os.environ.get("STRIPE_API_KEY")
     body = await request.body()
     signature = request.headers.get("Stripe-Signature", "")
-    
-    stripe_checkout = StripeCheckout(
-        api_key=os.environ.get("STRIPE_API_KEY"),
-        webhook_url=""
-    )
-    
+    webhook_secret = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
+
     try:
-        webhook_response = await stripe_checkout.handle_webhook(body, signature)
-        
-        if webhook_response.payment_status == "paid":
-            await db.payment_transactions.update_one(
-                {"session_id": webhook_response.session_id},
-                {"$set": {"payment_status": "paid"}}
-            )
-        
+        event = stripe.Webhook.construct_event(body, signature, webhook_secret)
+
+        if event["type"] == "checkout.session.completed":
+            session = event["data"]["object"]
+            if session.get("payment_status") == "paid":
+                await db.payment_transactions.update_one(
+                    {"session_id": session["id"]},
+                    {"$set": {"payment_status": "paid"}}
+                )
+
         return {"status": "processed"}
     except Exception as e:
         logging.error(f"Webhook error: {e}")
@@ -1460,10 +1455,8 @@ class ImageAnalysisRequest(BaseModel):
 
 @api_router.post("/ai/chat")
 async def ai_chat(message: ChatMessage, user: dict = Depends(get_optional_user)):
-    from emergentintegrations.llm.chat import LlmChat, UserMessage
-    
     session_id = message.session_id or str(uuid.uuid4())
-    
+
     system_message = """You are Fleur, the premium AI fragrance consultant for Fleur Fragrances — a luxury aroma oils brand based in Mumbai, India. You embody sophistication, warmth, and deep expertise in the world of fragrances.
 
 ## YOUR PERSONA
@@ -1490,9 +1483,9 @@ async def ai_chat(message: ChatMessage, user: dict = Depends(get_optional_user))
 | Victoria Royale | ₹300 | Luxury | Grand entrances |
 | Coorg Mandarin | ₹351 | Citrus | Morning energy |
 | Sandalwood Tranquility | ₹300 | Woody | Meditation, calm |
-| Ocean Secrets ⭐ | ₹300 | Fresh | Universal favorite |
+| Ocean Secrets | ₹300 | Fresh | Universal favorite |
 | Mystic Whiff | ₹250 | Oriental | Intriguing spaces |
-| Musk Oudh 🆕 | ₹550 | Woody | Premium luxury |
+| Musk Oudh | ₹550 | Woody | Premium luxury |
 | Morning Mist | ₹280 | Fresh | Wake-up freshness |
 | Lavender Bliss | ₹280 | Floral | Sleep & relaxation |
 | Jasmine Neroli | ₹250 | Floral | Mediterranean feel |
@@ -1508,15 +1501,16 @@ async def ai_chat(message: ChatMessage, user: dict = Depends(get_optional_user))
 
 When asked to identify fragrances from images, analyze visual cues like bottle shape, color, brand elements, and provide your best assessment."""
 
-    chat = LlmChat(
-        api_key=os.environ.get("EMERGENT_LLM_KEY"),
-        session_id=session_id,
-        system_message=system_message
-    ).with_model("openai", "gpt-5.2")
-    
-    user_msg = UserMessage(text=message.message)
-    response = await chat.send_message(user_msg)
-    
+    client_ai = openai.OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+    completion = client_ai.chat.completions.create(
+        model="gpt-4o",
+        messages=[
+            {"role": "system", "content": system_message},
+            {"role": "user", "content": message.message},
+        ],
+    )
+    response = completion.choices[0].message.content
+
     # Store chat history
     await db.chat_history.insert_one({
         "session_id": session_id,
@@ -1525,15 +1519,13 @@ When asked to identify fragrances from images, analyze visual cues like bottle s
         "ai_response": response,
         "created_at": datetime.now(timezone.utc).isoformat()
     })
-    
+
     return {"response": response, "session_id": session_id}
 
 @api_router.post("/ai/identify-perfume")
 async def ai_identify_perfume(request: ImageAnalysisRequest, user: dict = Depends(get_optional_user)):
-    from emergentintegrations.llm.chat import LlmChat, UserMessage, ImageContent
-    
     session_id = str(uuid.uuid4())
-    
+
     system_message = """You are an expert perfume identifier and fragrance analyst. When shown an image:
 1. Identify the perfume brand and name if recognizable
 2. Describe the bottle design and visual elements
@@ -1542,36 +1534,35 @@ async def ai_identify_perfume(request: ImageAnalysisRequest, user: dict = Depend
 
 If the image shows flowers, ingredients, or ambiance, describe what scent profile they represent."""
 
-    chat = LlmChat(
-        api_key=os.environ.get("EMERGENT_LLM_KEY"),
-        session_id=session_id,
-        system_message=system_message
-    ).with_model("openai", "gpt-5.2")
-    
+    question = request.question or "Identify this perfume or fragrance"
+
     if request.image_url:
-        user_msg = UserMessage(
-            text=request.question or "Identify this perfume or fragrance",
-            images=[ImageContent(url=request.image_url)]
-        )
+        image_content = {"type": "image_url", "image_url": {"url": request.image_url}}
     elif request.image_base64:
-        user_msg = UserMessage(
-            text=request.question or "Identify this perfume or fragrance",
-            images=[ImageContent(base64=request.image_base64)]
-        )
+        image_content = {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{request.image_base64}"}}
     else:
         return {"error": "Please provide an image URL or base64 image"}
-    
-    response = await chat.send_message(user_msg)
-    
+
+    client_ai = openai.OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+    completion = client_ai.chat.completions.create(
+        model="gpt-4o",
+        messages=[
+            {"role": "system", "content": system_message},
+            {"role": "user", "content": [
+                {"type": "text", "text": question},
+                image_content,
+            ]},
+        ],
+    )
+    response = completion.choices[0].message.content
+
     return {"analysis": response, "session_id": session_id}
 
 @api_router.post("/ai/scent-finder")
 async def ai_scent_finder(request: ScentFinderRequest):
-    from emergentintegrations.llm.chat import LlmChat, UserMessage
-    
     # Build context from answers
     answers_text = "\n".join([f"- {a.question_id}: {a.answer}" for a in request.answers])
-    
+
     system_message = """You are an expert fragrance matcher for Fleur Fragrances. Based on the user's quiz answers, recommend 3 perfect fragrances from our collection.
 
 Our products:
@@ -1600,19 +1591,20 @@ Return JSON with exactly 3 recommendations in this format:
   ]
 }"""
 
-    chat = LlmChat(
-        api_key=os.environ.get("EMERGENT_LLM_KEY"),
-        session_id=str(uuid.uuid4()),
-        system_message=system_message
-    ).with_model("openai", "gpt-5.2")
-    
     prompt = f"""Based on these quiz answers, recommend 3 fragrances:
 {answers_text}
 
 Return only valid JSON."""
 
-    user_msg = UserMessage(text=prompt)
-    response = await chat.send_message(user_msg)
+    client_ai = openai.OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+    completion = client_ai.chat.completions.create(
+        model="gpt-4o",
+        messages=[
+            {"role": "system", "content": system_message},
+            {"role": "user", "content": prompt},
+        ],
+    )
+    response = completion.choices[0].message.content
     
     # Parse JSON response
     try:
